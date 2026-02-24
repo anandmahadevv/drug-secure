@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import logo from '../assets/logo.png'; // Removed to fix 'logo is declared but never read' error
+import anand from '../assets/anand.png';
 import './Landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -73,6 +74,14 @@ const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
   </svg>
 );*/
 
+const teamMembers = [
+  { role: "Project Lead", desc: "Operations", image: anand },
+  { role: "AI Engineer", desc: "ML Lead", image: "" }, // Add photos here
+  { role: "Systems Arch", desc: "Arch", image: "" },
+  { role: "Pharma Advisor", desc: "QC Spec", image: "" },
+  { role: "Analyst", desc: "Market", image: "" }
+];
+
 const Landing: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const tableRef = useRef<HTMLDivElement | null>(null);
@@ -138,7 +147,7 @@ const Landing: React.FC = () => {
                 className={`nav-link text-xs font-bold uppercase tracking-[0.2em] hover:text-ayurveda-accent transition-colors ${isScrolled ? 'text-white/90' : 'text-ayurveda-green/80'}`}
               >
                 {item}
-              </a>  
+              </a>
             ))}
             <button className={`ml-8 btn-premium px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${isScrolled ? 'bg-white text-ayurveda-green border-none' : 'border-2 border-ayurveda-green text-ayurveda-green hover:bg-ayurveda-green hover:text-white'}`}>
               Contact
@@ -469,16 +478,20 @@ const Landing: React.FC = () => {
           <div className="container mx-auto px-6 md:px-12 lg:px-20 text-center">
             <h2 className=" text-[15px] font-bold uppercase tracking-[0.7em] text-ayurveda mb-20 italic font-serif">Technical Committee</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 md:gap-16 max-w-6xl mx-auto">
-              {[
-                { role: "Project Lead", desc: "Operations" },
-                { role: "AI Engineer", desc: "ML Lead" },
-                { role: "Systems Arch", desc: "Arch" },
-                { role: "Pharma Advisor", desc: "QC Spec" },
-                { role: "Analyst", desc: "Market" }
-              ].map((member, i) => (
+              {teamMembers.map((member, i) => (
                 <div key={i} className={` space-y-6 group`}>
-                  <div className="w-full aspect-square bg-ayurveda-light rounded-[2rem] flex items-center justify-center border border-ayurveda-beige/20 shadow-inner hover:shadow-2xl transition-all duration-700">
-                    <svg className="w-10 h-10 text-ayurveda opacity-10" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" /></svg>
+                  <div className="w-full aspect-square bg-ayurveda-light rounded-[2rem] flex items-center justify-center border border-ayurveda-beige/20 shadow-inner hover:shadow-2xl transition-all duration-700 overflow-hidden bg-white">
+                    {member.image ? (
+                      <img
+                        src={member.image}
+                        alt={member.role}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <svg className="w-10 h-10 text-ayurveda opacity-10" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                      </svg>
+                    )}
                   </div>
                   <h4 className="font-bold text-lg italic tracking-tighter font-serif">{member.role}</h4>
                   <p className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-40 italic text-ayurveda-green/90">{member.desc}</p>
