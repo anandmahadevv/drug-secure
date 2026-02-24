@@ -20,14 +20,8 @@ function App() {
   }
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setView('dashboard')}
-        className="fixed z-50 bottom-4 right-4 bg-ayurveda-green/90 hover:bg-ayurveda-green text-white px-4 py-2 rounded-lg font-sans border border-ayurveda-leaf shadow-lg text-sm font-medium backdrop-blur-sm transition-all"
-      >
-        View Lab Dashboard →
-      </button>
-      <Landing />
+    <div>
+      <Landing onNavigateToDashboard={() => setView('dashboard')} />
     </div>
   );
 }
