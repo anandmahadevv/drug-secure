@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import logo from '../src/assets/logo.png';
 import './Landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -99,9 +100,9 @@ const Landing: React.FC = () => {
       {/* 0. MORPHING NAVBAR */}
       <nav className={`navbar-premium ${isScrolled ? 'navbar-scrolled' : ''}`}>
         <div className="container mx-auto px-6 md:px-12 lg:px-20 flex justify-between items-center">
-          <div className="navbar-logo flex items-center gap-2 cursor-pointer">
-            <div className="w-8 h-8 bg-ayurveda-accent rounded-lg flex items-center justify-center text-white font-bold italic shadow-lg">D</div>
-            <span className={`text-xl font-serif font-bold tracking-tighter ${isScrolled ? 'text-white' : 'text-ayurveda-green'}`}>DrugSecure</span>
+          <div className="navbar-logo flex items-center gap-3 cursor-pointer group">
+            <img src={logo} alt="DrugSecure Logo" className="h-10 md:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-110" />
+            <span className={`text-xl md:text-2xl font-serif font-bold tracking-tighter transition-colors duration-300 ${isScrolled ? 'text-white' : 'text-ayurveda'}`}>DrugSecure</span>
           </div>
 
           <div className="hidden md:flex items-center">
@@ -429,9 +430,9 @@ const Landing: React.FC = () => {
                 { phase: "04", title: "Global Cloud Launch", desc: "Full-scale SaaS deployment with IoT-enabled sensor hubs." }
               ].map((item, i) => (
                 <div key={i} className="space-y-6 bg-white/4 backdrop-blur-sm p-8 md:p-12 rounded-2xl border border-white/10 relative min-h-[300px] flex flex-col transition-all duration-500 hover:backdrop-blur-xl hover:shadow-2xl hover:-translate-y-2 group">
-                  <div className="text-ayurveda-accent font-bold text-[10px] mb-8 uppercase tracking-[0.3em] group-hover:scale-110 transition-transform duration-500">Phase {item.phase}</div>
+                  <div className="text-ayurveda font-bold text-[10px] mb-8 uppercase tracking-[0.3em] group-hover:scale-110 transition-transform duration-500">Phase {item.phase}</div>
                   <h3 className="text-xl md:text-2xl font-bold mb-8 italic font-serif">{item.title}</h3>
-                  <p className="text-white/40 text-[12px] leading-relaxed mt-auto font-light italic">{item.desc}</p>
+                  <p className="text-green-200 text-[12px] leading-relaxed mt-auto font-light italic">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -441,7 +442,7 @@ const Landing: React.FC = () => {
         {/* 11. TEAM SECTION */}
         <section id="team" className=" py-32 bg-white relative">
           <div className="container mx-auto px-6 md:px-12 lg:px-20 text-center">
-            <h2 className=" text-[10px] font-bold uppercase tracking-[0.7em] text-ayurveda-green/20 mb-20 italic font-serif">Technical Committee</h2>
+            <h2 className=" text-[15px] font-bold uppercase tracking-[0.7em] text-ayurveda mb-20 italic font-serif">Technical Committee</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 md:gap-16 max-w-6xl mx-auto">
               {[
                 { role: "Project Lead", desc: "Operations" },
@@ -452,10 +453,10 @@ const Landing: React.FC = () => {
               ].map((member, i) => (
                 <div key={i} className={` space-y-6 group`}>
                   <div className="w-full aspect-square bg-ayurveda-light rounded-[2rem] flex items-center justify-center border border-ayurveda-beige/20 shadow-inner hover:shadow-2xl transition-all duration-700">
-                    <svg className="w-10 h-10 text-ayurveda-green opacity-10" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" /></svg>
+                    <svg className="w-10 h-10 text-ayurveda opacity-10" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" /></svg>
                   </div>
                   <h4 className="font-bold text-lg italic tracking-tighter font-serif">{member.role}</h4>
-                  <p className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-40 italic">{member.desc}</p>
+                  <p className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-40 italic text-ayurveda-green/90">{member.desc}</p>
                 </div>
               ))}
             </div>
@@ -474,11 +475,11 @@ const Landing: React.FC = () => {
                 { q: "What defines success metrics?", a: "Success is defined by Intra-cluster variance. Minimizing centroid distance guarantees consistency." }
               ].map((faq, idx) => (
                 <div key={idx} className={` bg-white border border-ayurveda-beige/40 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500 group`}>
-                  <div className="p-8 font-bold text-ayurveda-green border-b border-ayurveda-beige/10 flex justify-between items-center group-hover:bg-ayurveda-accent/5 cursor-pointer">
+                  <div className="p-8 font-bold text-ayurveda border-b border-ayurveda-beige/10 flex justify-between items-center group-hover:bg-ayurveda-accent/5 cursor-pointer">
                     <span className="italic text-base md:text-lg font-serif">{faq.q}</span>
                     <div className="w-8 h-8 rounded-full border border-ayurveda-accent/20 flex items-center justify-center text-ayurveda-accent transition-all group-hover:rotate-45">+</div>
                   </div>
-                  <div className="p-10 text-ayurveda-green/70 leading-relaxed font-light text-xs md:text-sm italic">{faq.a}</div>
+                  <div className="p-10 text-ayurveda-green/90 leading-relaxed font-light text-xs md:text-sm italic">{faq.a}</div>
                 </div>
               ))}
             </div>
@@ -486,10 +487,13 @@ const Landing: React.FC = () => {
         </section>
 
         {/* 13. FOOTER */}
-        <footer className="py-24 bg-tech-navy text-white text-center border-t border-white/5 relative overflow-hidden flex flex-col items-center">
+        <footer className="py-24 bg-[radial-gradient(ellipse_at_top,_#1a3a2a_0%,_#0a1628_60%,_#050d14_100%)] text-white text-center border-t border-white/5 relative overflow-hidden flex flex-col items-center">
           <div className="container mx-auto px-6 md:px-12 lg:px-20 relative z-10">
-            <div className=" mb-16 opacity-30 tracking-[0.8em] italic font-bold text-[10px] uppercase">
-              DRUG SECURE QUALITY SYSTEMS / 2026
+            <div className="mb-10 flex flex-col items-center group">
+              <img src={logo} alt="DrugSecure Logo" className="h-16 w-auto object-contain mb-6 opacity-80 group-hover:opacity-100 transition-opacity duration-300 grayscale brightness-200" />
+              <div className="opacity-30 tracking-[0.8em] italic font-bold text-[10px] uppercase">
+                DRUG SECURE QUALITY SYSTEMS / 2026
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-center gap-10 md:gap-20 text-[10px] uppercase tracking-[0.3em] font-bold opacity-60 italic">
               <a href="#" className="hover:text-ayurveda-accent transition-colors underline decoration-white/10 underline-offset-[12px] hover:decoration-ayurveda-accent">Hackathon</a>
