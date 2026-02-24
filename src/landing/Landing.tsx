@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import logo from '../src/assets/logo.png';
+import logo from '../assets/logo.png'; // Removed to fix 'logo is declared but never read' error
 import './Landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -49,6 +49,29 @@ const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
     </div>
   );
 };
+
+/*const Logo: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 40 40"
+    className={className}
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect width="40" height="40" rx="8" fill="#E67E22" />
+    <path
+      d="M20 10C20 10 24 14 24 18C24 22 20 26 20 26V10ZM20 10C20 10 16 14 16 18C16 22 20 26 20 26V10Z"
+      fill="white"
+      fillOpacity="0.8"
+    />
+    <circle cx="20" cy="18" r="3" fill="white" />
+    <path
+      d="M12 28H28"
+      stroke="white"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </svg>
+);*/
 
 const Landing: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -100,9 +123,11 @@ const Landing: React.FC = () => {
       {/* 0. MORPHING NAVBAR */}
       <nav className={`navbar-premium ${isScrolled ? 'navbar-scrolled' : ''}`}>
         <div className="container mx-auto px-6 md:px-12 lg:px-20 flex justify-between items-center">
-          <div className="navbar-logo flex items-center gap-3 cursor-pointer group">
-            <img src={logo} alt="DrugSecure Logo" className="h-10 md:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-110" />
-            <span className={`text-xl md:text-2xl font-serif font-bold tracking-tighter transition-colors duration-300 ${isScrolled ? 'text-white' : 'text-ayurveda'}`}>DrugSecure</span>
+          <div className="navbar-logo flex items-center cursor-pointer group">
+            <div className="w-10 h-10 mr-2 rounded-lg flex items-center justify-center shadow-lg overflow-hidden transition-transform duration-300 group-hover:scale-110">
+              <img src={logo} alt="Logo" className="w-10 h-10 rounded-lg" />
+            </div>
+            <span className={`text-xl md:text-2xl font-serif font-bold tracking-tighter transition-colors duration-300 ${isScrolled ? 'text-white' : 'text-ayurveda'}`}>Drug Secure</span>
           </div>
 
           <div className="hidden md:flex items-center">
@@ -113,7 +138,7 @@ const Landing: React.FC = () => {
                 className={`nav-link text-xs font-bold uppercase tracking-[0.2em] hover:text-ayurveda-accent transition-colors ${isScrolled ? 'text-white/90' : 'text-ayurveda-green/80'}`}
               >
                 {item}
-              </a>
+              </a>  
             ))}
             <button className={`ml-8 btn-premium px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${isScrolled ? 'bg-white text-ayurveda-green border-none' : 'border-2 border-ayurveda-green text-ayurveda-green hover:bg-ayurveda-green hover:text-white'}`}>
               Contact
@@ -490,7 +515,10 @@ const Landing: React.FC = () => {
         <footer className="py-24 bg-[radial-gradient(ellipse_at_top,_#1a3a2a_0%,_#0a1628_60%,_#050d14_100%)] text-white text-center border-t border-white/5 relative overflow-hidden flex flex-col items-center">
           <div className="container mx-auto px-6 md:px-12 lg:px-20 relative z-10">
             <div className="mb-10 flex flex-col items-center group">
-              <img src={logo} alt="DrugSecure Logo" className="h-16 w-auto object-contain mb-6 opacity-80 group-hover:opacity-100 transition-opacity duration-300 grayscale brightness-200" />
+              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6 opacity-30 group-hover:opacity-100 transition-all duration-300">
+                {/*<Logo className="w-12 h-12" />*/}
+                <img src="/logo.png" alt="logo" className="w-12 h-12" />
+              </div>
               <div className="opacity-30 tracking-[0.8em] italic font-bold text-[10px] uppercase">
                 DRUG SECURE QUALITY SYSTEMS / 2026
               </div>
