@@ -923,7 +923,7 @@ export default function Dashboard() {
                                     <div className="flex-1 w-full min-h-0 relative">
                                         <div className="absolute right-2 bottom-0 text-[10px] text-slate-500 z-10 pointer-events-none pb-2 pr-2">▲ Triangle = Custom sample</div>
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <ScatterChart margin={{ top: 10, right: 30, bottom: 40, left: 15 }}>
+                                            <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                                                 <XAxis
                                                     type="number"
@@ -932,7 +932,7 @@ export default function Dashboard() {
                                                     domain={scatterXDomain}
                                                     stroke="#94a3b8"
                                                     tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                    label={{ value: 'Active Compound (%)', position: 'insideBottom', offset: -25, fill: '#94a3b8', fontSize: 12 }}
+                                                    label={{ value: 'Active Compound (%)', position: 'insideBottom', offset: -10, fill: '#94a3b8', fontSize: 12 }}
                                                 />
                                                 <YAxis
                                                     type="number"
@@ -940,7 +940,7 @@ export default function Dashboard() {
                                                     name="Heavy Metals (ppm)"
                                                     stroke="#94a3b8"
                                                     tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                    label={{ value: 'Heavy Metals (ppm)', angle: -90, position: 'insideLeft', offset: 25, fill: '#94a3b8', fontSize: 12 }}
+                                                    label={{ value: 'Heavy Metals (ppm)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }}
                                                 />
                                                 <RechartsTooltip
                                                     cursor={{ strokeDasharray: '3 3' }}
@@ -948,7 +948,7 @@ export default function Dashboard() {
                                                 />
                                                 <ReferenceLine x={INDUSTRY_BENCHMARKS.ActiveCompoundPct} stroke="#6366f1" strokeDasharray="4 4" label="WHO Min" />
                                                 <ReferenceLine y={INDUSTRY_BENCHMARKS.HeavyMetalPpm} stroke="#6366f1" strokeDasharray="4 4" label="WHO Max" />
-                                                <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#cbd5e1' }} />
+                                                <Legend verticalAlign="bottom" height={60} wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#cbd5e1' }} />
                                                 <Scatter name="High Purity" data={scatterCluster1} fill={CLUSTER_COLORS[1]} shape={<CustomDot />} />
                                                 <Scatter name="Moderate Risk" data={scatterCluster2} fill={CLUSTER_COLORS[2]} shape={<CustomDot />} />
                                                 <Scatter name="Contaminated" data={scatterCluster3} fill={CLUSTER_COLORS[3]} shape={<CustomDot />} />
