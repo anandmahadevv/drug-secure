@@ -71,7 +71,11 @@ const teamMembers = [
   { role: "Analyst", desc: "Market", image: renin }
 ];
 
-const Landing: React.FC = () => {
+interface LandingProps {
+  onNavigateToDashboard?: () => void;
+}
+
+const Landing: React.FC<LandingProps> = ({ onNavigateToDashboard }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement | null>(null);
@@ -141,7 +145,9 @@ const Landing: React.FC = () => {
                 {item}
               </a>
             ))}
-            <button className={`ml-8 btn-premium px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${isScrolled ? 'bg-white text-ayurveda-green border-none' : 'border-2 border-ayurveda-green text-ayurveda-green hover:bg-ayurveda-green hover:text-white'}`}>
+            <button
+              onClick={onNavigateToDashboard}
+              className={`ml-8 btn-premium px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${isScrolled ? 'bg-white text-ayurveda-green border-none' : 'border-2 border-ayurveda-green text-ayurveda-green hover:bg-ayurveda-green hover:text-white'}`}>
               Dashboard
             </button>
           </div>
@@ -182,7 +188,10 @@ const Landing: React.FC = () => {
               ))}
               <div className="h-px w-full bg-white/10 my-2"></div>
               <button
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onNavigateToDashboard?.();
+                }}
                 className="btn-premium px-8 py-4 bg-white text-ayurveda-green rounded-xl font-bold uppercase tracking-widest text-xs text-center shadow-lg"
               >
                 Dashboard
