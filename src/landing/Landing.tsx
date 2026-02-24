@@ -55,28 +55,13 @@ const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
   );
 };
 
-/*const Logo: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    viewBox="0 0 40 40"
-    className={className}
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <rect width="40" height="40" rx="8" fill="#E67E22" />
-    <path
-      d="M20 10C20 10 24 14 24 18C24 22 20 26 20 26V10ZM20 10C20 10 16 14 16 18C16 22 20 26 20 26V10Z"
-      fill="white"
-      fillOpacity="0.8"
-    />
-    <circle cx="20" cy="18" r="3" fill="white" />
-    <path
-      d="M12 28H28"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </svg>
-);*/
+
+const comparisonData = [
+  { label: "Validation", manual: "Subjective Observation", ai: "Automated Unsupervised ML" },
+  { label: "Velocity", manual: "Weeks per Batch Sequence", ai: "Real-time Processing" },
+  { label: "Pattern Identification", manual: "Limited to Raw Indicators", ai: "High-Dimensional Mapping" },
+  { label: "Consistency Logic", manual: "Reactive Fault Detection", ai: "Predictive Quality Confidence" }
+];
 
 const teamMembers = [
   { role: "Project Lead", desc: "Operations", image: anand },
@@ -88,7 +73,10 @@ const teamMembers = [
 
 const Landing: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement | null>(null);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   // Scroll Listener for Navbar Morph
   useEffect(() => {
@@ -159,7 +147,47 @@ const Landing: React.FC = () => {
           </div>
 
           <div className="md:hidden">
-            <svg className={`w-6 h-6 ${isScrolled ? 'text-white' : 'text-ayurveda-green'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            <button
+              onClick={toggleMenu}
+              className={`p-2 transition-colors duration-300 z-[1001] relative ${isScrolled || isMenuOpen ? 'text-white' : 'text-ayurveda-green'}`}
+              aria-label="Toggle Menu"
+            >
+              {isMenuOpen ? (
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              ) : (
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* MOBILE MENU DROPDOWN */}
+        <div className={`absolute top-full left-0 right-0 md:hidden transition-all duration-500 ease-in-out border-t border-white/10 ${isMenuOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-4 invisible pointer-events-none'}`}>
+          <div className="bg-ayurveda-green/95 backdrop-blur-xl shadow-2xl flex flex-col p-8 overflow-hidden rounded-b-3xl">
+            <div className="flex flex-col gap-6">
+              {['Solution', 'Market', 'Roadmap', 'FAQ'].map((item) => (
+                <a
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-xl font-serif font-bold text-white/90 hover:text-ayurveda-accent transition-colors tracking-tight flex items-center justify-between group"
+                >
+                  {item}
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </a>
+              ))}
+              <div className="h-px w-full bg-white/10 my-2"></div>
+              <button
+                onClick={() => setIsMenuOpen(false)}
+                className="btn-premium px-8 py-4 bg-white text-ayurveda-green rounded-xl font-bold uppercase tracking-widest text-xs text-center shadow-lg"
+              >
+                Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -302,9 +330,10 @@ const Landing: React.FC = () => {
               <h3 className="text-3xl md:text-5xl font-bold italic tracking-tight font-serif">Traditional Testing vs. <br /><span className="text-tech-blue underline decoration-tech-blue/20 underline-offset-[12px]">AI Clustering System</span></h3>
             </div>
 
+            {/* DESKTOP TABLE VIEW */}
             <div
               ref={tableRef}
-              className="max-w-6xl mx-auto overflow-hidden rounded-[1.5rem] md:rounded-[3.5rem] border border-ayurveda-beige/40 shadow-2xl bg-white relative will-change-transform"
+              className="hidden md:block max-w-6xl mx-auto overflow-hidden rounded-[1.5rem] md:rounded-[3.5rem] border border-ayurveda-beige/40 shadow-2xl bg-white relative will-change-transform"
             >
               <div className="overflow-x-auto scrollbar-hide">
                 <table className="w-full text-left border-collapse min-w-[600px] md:min-w-[700px]">
@@ -316,12 +345,7 @@ const Landing: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm md:text-lg">
-                    {[
-                      { label: "Validation", manual: "Subjective Observation", ai: "Automated Unsupervised ML" },
-                      { label: "Velocity", manual: "Weeks per Batch Sequence", ai: "Real-time Processing" },
-                      { label: "Pattern Identification", manual: "Limited to Raw Indicators", ai: "High-Dimensional Mapping" },
-                      { label: "Consistency Logic", manual: "Reactive Fault Detection", ai: "Predictive Quality Confidence" }
-                    ].map((row, i) => (
+                    {comparisonData.map((row, i) => (
                       <tr key={i} className="border-b border-ayurveda-beige/20 hover:bg-ayurveda-light/40 transition-all duration-300">
                         <td className="p-6 md:p-10 font-bold text-xs md:text-sm uppercase">{row.label}</td>
                         <td className="p-6 md:p-10 text-ayurveda-green/50 border-l italic font-light font-serif">{row.manual}</td>
@@ -331,6 +355,33 @@ const Landing: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* MOBILE CARDS VIEW */}
+            <div className="md:hidden space-y-6">
+              {comparisonData.map((row, i) => (
+                <div key={i} className="p-8 bg-white rounded-3xl border border-ayurveda-beige/40 shadow-xl">
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-ayurveda-accent mb-6 bg-ayurveda-accent/5 inline-block px-3 py-1 rounded-full">
+                    {row.label}
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="flex gap-4">
+                      <div className="w-1.5 h-1.5 rounded-full bg-ayurveda-green/30 mt-2 shrink-0"></div>
+                      <div>
+                        <span className="block text-[10px] font-bold uppercase tracking-widest text-ayurveda-green/40 mb-1">Manual Protocols</span>
+                        <p className="text-sm italic font-serif text-ayurveda-green/60">{row.manual}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-1.5 h-1.5 rounded-full bg-tech-blue mt-2 shrink-0"></div>
+                      <div>
+                        <span className="block text-[10px] font-bold uppercase tracking-widest text-tech-blue/40 mb-1">AI Infrastructure</span>
+                        <p className="text-sm font-bold text-tech-blue">{row.ai}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
