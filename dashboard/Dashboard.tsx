@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
     ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     BarChart, Bar, Cell, ReferenceLine
@@ -132,19 +132,122 @@ const CustomTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-export default function Dashboard() {
-    const customSampleCounter = useRef(1);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [hasAnalyzed, setHasAnalyzed] = useState(false);
-    const [analyzedData, setAnalyzedData] = useState<AnalyzedSample[]>([]);
-    const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-    const [customSamples, setCustomSamples] = useState<Sample[]>([]);
-    const [analysisError, setAnalysisError] = useState<string>('');
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [isStale, setIsStale] = useState(false);
+
+const CustomDot = (props: any) => {
+    const { cx, cy, fill, payload } = props;
+    const isCustom = payload?.SampleID?.startsWith('C-');
+    if (isCustom) {
+        return <polygon points={`${cx},${cy - 6} ${cx + 5},${cy + 4} ${cx - 5},${cy + 4}`} fill={fill} stroke="white" strokeWidth={1.5} />;
+    }
+    return <circle cx={cx} cy={cy} r={5} fill={fill} />;
+};
+
+const SampleDetailPanel = ({ sample }: { sample: Sample }) => {
+    return (
+        <div className="flex flex-col gap-3 text-xs text-slate-400 bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 shadow-inner">
+            {/* Section A: Physicochemical */}
+            <div>
+                <h4 className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2 pb-1 border-b border-slate-700/50">Physicochemical Parameters</h4>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5"><span className="w-32">Moisture %:</span><span className="font-mono text-slate-300">{sample.MoisturePct}</span>{sample.MoisturePct <= INDUSTRY_BENCHMARKS.MoisturePct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-32">Total Ash %:</span><span className="font-mono text-slate-300">{sample.TotalAsh}</span>{sample.TotalAsh <= INDUSTRY_BENCHMARKS.TotalAsh ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-32">Acid Insol. Ash %:</span><span className="font-mono text-slate-300">{sample.AcidInsolAsh}</span>{sample.AcidInsolAsh <= INDUSTRY_BENCHMARKS.AcidInsolAsh ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-32">Heavy Metal ppm:</span><span className="font-mono text-slate-300">{sample.HeavyMetalPpm}</span>{sample.HeavyMetalPpm <= INDUSTRY_BENCHMARKS.HeavyMetalPpm ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-32">Active Compound %:</span><span className="font-mono text-slate-300">{sample.ActiveCompoundPct}</span>{sample.ActiveCompoundPct >= INDUSTRY_BENCHMARKS.ActiveCompoundPct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-32">Water Extract %:</span><span className="font-mono text-slate-300">{sample.WaterExtractPct}</span>{sample.WaterExtractPct >= INDUSTRY_BENCHMARKS.WaterExtractPct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-32">Alcohol Extract %:</span><span className="font-mono text-slate-300">{sample.AlcoholExtractPct}</span>{sample.AlcoholExtractPct >= INDUSTRY_BENCHMARKS.AlcoholExtractPct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-32">pH:</span><span className="font-mono text-slate-300">{sample.pH}</span>{sample.pH >= INDUSTRY_BENCHMARKS.pH.min && sample.pH <= INDUSTRY_BENCHMARKS.pH.max ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
+                </div>
+            </div>
+
+            {/* Section B: Powder Flow */}
+            <div>
+                <h4 className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2 pb-1 border-b border-slate-700/50">Powder Flow</h4>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1"><span className="w-32">Bulk Density:</span><span className="font-mono text-slate-300">{sample.BulkDensity} <span className="text-slate-500 text-[10px]">g/mL</span></span></div>
+                    <div className="flex items-center gap-1"><span className="w-32">Tap Density:</span><span className="font-mono text-slate-300">{sample.TapDensity} <span className="text-slate-500 text-[10px]">g/mL</span></span></div>
+                    <div className="flex items-center gap-1"><span className="w-32">Carr's Index:</span>
+                        {(() => {
+                            const ci = ((sample.TapDensity - sample.BulkDensity) / sample.TapDensity) * 100;
+                            const ciVal = ci.toFixed(1);
+                            let color = 'text-green-400';
+                            let label = 'Excellent/Good';
+                            if (ci >= 15 && ci <= 25) { color = 'text-amber-400'; label = 'Passable'; }
+                            else if (ci > 25) { color = 'text-red-400'; label = 'Poor'; }
+                            return <span className={`font-mono ${color}`}>{ciVal}% <span className="text-slate-500 text-[10px]">({label})</span></span>;
+                        })()}
+                    </div>
+                    <div className="flex items-center gap-1"><span className="w-32">Hausner's Ratio:</span>
+                        {(() => {
+                            const hr = sample.TapDensity / sample.BulkDensity;
+                            const hrVal = hr.toFixed(2);
+                            let color = 'text-green-400';
+                            if (hr >= 1.2 && hr <= 1.35) color = 'text-amber-400';
+                            else if (hr > 1.35) color = 'text-red-400';
+                            return <span className={`font-mono ${color}`}>{hrVal}</span>;
+                        })()}
+                    </div>
+                </div>
+            </div>
+
+            {/* Section C: Qualitative */}
+            {(sample.Color || sample.Odor || sample.Taste || sample.ForeignMatter !== undefined || sample.HPTLCRf !== undefined || sample.Alkaloids || sample.Flavonoids || sample.Steroids || sample.Polyphenols || sample.Saponins || sample.Sugars) && (
+                <div>
+                    <h4 className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2 pb-1 border-b border-slate-700/50">Qualitative Profile</h4>
+                    <div className="mb-2 text-slate-300">
+                        {sample.Color && <span className="mr-3">Color: <span className="text-white">{sample.Color}</span></span>}
+                        {sample.Odor && <span className="mr-3">Odor: <span className="text-white">{sample.Odor}</span></span>}
+                        {sample.Taste && <span className="mr-3">Taste: <span className="text-white">{sample.Taste}</span></span>}
+                        {sample.ForeignMatter !== undefined && <span className="mr-3">Foreign Matter: <span className="text-white">{sample.ForeignMatter}%</span></span>}
+                        {sample.HPTLCRf !== undefined && <span>HPTLC Rf: <span className="text-white">{sample.HPTLCRf}</span></span>}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {['Alkaloids', 'Flavonoids', 'Steroids', 'Polyphenols', 'Saponins', 'Sugars'].map(test => {
+                            const val = (sample as any)[test];
+                            if (!val) return <span key={test} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 border border-slate-700">{test}: —</span>;
+                            return (
+                                <span key={test} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border ${val === 'Pass' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                    {test}: {val}
+                                </span>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ClusterSummaryCard = ({ clusterId, label, color, topColor, stats, isCompliantStatus }: { clusterId: ClusterId, label: string, color: string, topColor: string, stats: { active: number, heavy: number, waterExtract: number, alcoholExtract: number }, isCompliantStatus: boolean }) => {
+    return (
+        <div className={`bg-slate-800 p-5 rounded-xl border border-slate-700 border-t-4 ${topColor} shadow-md relative overflow-hidden`}>
+            {clusterId === 3 && <AlertTriangle className="absolute -bottom-4 -right-4 w-24 h-24 text-red-500/10" />}
+            <h3 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Cluster {clusterId}</h3>
+            <div className="flex items-center gap-2 mb-3">
+                <div className={`w-3 h-3 rounded-full bg-${color}-500`}></div>
+                <span className="text-lg font-bold text-slate-100">{label}</span>
+            </div>
+            <div className="space-y-1 text-sm text-slate-300">
+                <p className="flex justify-between"><span>Avg Active:</span> <span className={`font-mono text-${color}-400`}>{stats.active.toFixed(1)}%</span></p>
+                <p className="flex justify-between"><span>Avg Metal:</span> <span className={`font-mono text-${color}-400`}>{stats.heavy.toFixed(1)} ppm</span></p>
+                <p className="flex justify-between"><span>Avg Water Ext:</span> <span className={`font-mono text-${color}-400`}>{stats.waterExtract.toFixed(1)}%</span></p>
+                <p className="flex justify-between"><span>Avg Alcohol Ext:</span> <span className={`font-mono text-${color}-400`}>{stats.alcoholExtract.toFixed(1)}%</span></p>
+                <p className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
+                    <span>WHO Compliant:</span>
+                    {isCompliantStatus ? (
+                        <span className="flex items-center gap-1 text-green-400 font-medium"><CheckCircle className="w-3.5 h-3.5" /> Yes</span>
+                    ) : (
+                        <span className="flex items-center gap-1 text-red-400 font-medium"><XCircle className="w-3.5 h-3.5" /> No</span>
+                    )}
+                </p>
+            </div>
+        </div>
+    );
+};
+
+const AddSampleForm = ({ onAdd, nextId }: { onAdd: (sample: Sample) => void, nextId: () => string }) => {
     const [pasteInput, setPasteInput] = useState('');
     const [pasteError, setPasteError] = useState('');
-
     const [newSample, setNewSample] = useState({
         Brand: '', MoisturePct: '', TotalAsh: '', AcidInsolAsh: '', HeavyMetalPpm: '',
         ActiveCompoundPct: '', WaterExtractPct: '', AlcoholExtractPct: '', BulkDensity: '', TapDensity: '', pH: '',
@@ -152,8 +255,6 @@ export default function Dashboard() {
         Alkaloids: '', Flavonoids: '', Steroids: '', Polyphenols: '', Saponins: '', Sugars: ''
     });
     const [validationError, setValidationError] = useState('');
-    const [editingSampleId, setEditingSampleId] = useState<string | null>(null);
-    const [editValues, setEditValues] = useState<typeof newSample | null>(null);
     const [showQualitative, setShowQualitative] = useState(false);
 
     const parsePastedData = (raw: string) => {
@@ -180,7 +281,7 @@ export default function Dashboard() {
         }
     };
 
-    const handleAddSample = () => {
+    const handleAdd = () => {
         const { Brand, MoisturePct, TotalAsh, AcidInsolAsh, HeavyMetalPpm, ActiveCompoundPct, WaterExtractPct, AlcoholExtractPct, BulkDensity, TapDensity, pH, Color, Odor, Taste, ForeignMatter, HPTLCRf, Alkaloids, Flavonoids, Steroids, Polyphenols, Saponins, Sugars } = newSample;
         const m = parseFloat(MoisturePct);
         const a = parseFloat(TotalAsh);
@@ -198,8 +299,7 @@ export default function Dashboard() {
             return;
         }
         setValidationError('');
-        const newId = `C-${String(customSampleCounter.current).padStart(3, '0')}`;
-        customSampleCounter.current += 1;
+        const newId = nextId();
 
         const customData: Sample = {
             SampleID: newId, Brand, MoisturePct: m, TotalAsh: a, AcidInsolAsh: aia, HeavyMetalPpm: hm,
@@ -217,17 +317,189 @@ export default function Dashboard() {
         if (Saponins) customData.Saponins = Saponins as any;
         if (Sugars) customData.Sugars = Sugars as any;
 
-        setCustomSamples([...customSamples, customData]);
-        if (hasAnalyzed) setIsStale(true);
-
+        onAdd(customData);
         setNewSample({
             Brand: '', MoisturePct: '', TotalAsh: '', AcidInsolAsh: '', HeavyMetalPpm: '',
             ActiveCompoundPct: '', WaterExtractPct: '', AlcoholExtractPct: '', BulkDensity: '', TapDensity: '', pH: '',
             Color: '', Odor: '', Taste: '', ForeignMatter: '', HPTLCRf: '',
             Alkaloids: '', Flavonoids: '', Steroids: '', Polyphenols: '', Saponins: '', Sugars: ''
         });
-        setShowAddForm(false);
     };
+
+    return (
+        <div className="mb-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50 space-y-2 text-sm drop-shadow-md overflow-hidden">
+            <div className="mb-3 pb-3 border-b border-slate-700/50 flex flex-col gap-2">
+                <h4 className="text-xs text-indigo-400 font-medium tracking-wide font-mono uppercase">Smart Paste Parser</h4>
+                <textarea
+                    placeholder="Paste tab/comma separated numerical values here..."
+                    value={pasteInput}
+                    onChange={(e) => setPasteInput(e.target.value)}
+                    className="w-full h-16 bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors text-xs resize-none"
+                />
+                <div className="flex justify-between items-center gap-2">
+                    {pasteError ? <span className="text-red-400 text-[10px] leading-tight flex-1">{pasteError}</span> : <span className="text-slate-500 text-[10px] leading-tight flex-1">Expected: Brand, Moisture, TotalAsh, AcidInsolAsh, HeavyMetal, Active, WaterExt, AlcExt, BulkD, TapD, pH</span>}
+                    <button onClick={() => parsePastedData(pasteInput)} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-medium transition-colors shrink-0">Parse Data</button>
+                </div>
+            </div>
+            <input placeholder="Brand" value={newSample.Brand} onChange={e => setNewSample({ ...newSample, Brand: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+            <div className="grid grid-cols-2 gap-2">
+                <input type="number" placeholder="Moisture %" value={newSample.MoisturePct} onChange={e => setNewSample({ ...newSample, MoisturePct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Total Ash %" value={newSample.TotalAsh} onChange={e => setNewSample({ ...newSample, TotalAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Acid Insol. Ash %" value={newSample.AcidInsolAsh} onChange={e => setNewSample({ ...newSample, AcidInsolAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Heavy Metal ppm" value={newSample.HeavyMetalPpm} onChange={e => setNewSample({ ...newSample, HeavyMetalPpm: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Active Compound %" value={newSample.ActiveCompoundPct} onChange={e => setNewSample({ ...newSample, ActiveCompoundPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Water Extract %" value={newSample.WaterExtractPct} onChange={e => setNewSample({ ...newSample, WaterExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Alcohol Extract %" value={newSample.AlcoholExtractPct} onChange={e => setNewSample({ ...newSample, AlcoholExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Bulk Density" value={newSample.BulkDensity} onChange={e => setNewSample({ ...newSample, BulkDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Tap Density" value={newSample.TapDensity} onChange={e => setNewSample({ ...newSample, TapDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="pH" value={newSample.pH} onChange={e => setNewSample({ ...newSample, pH: e.target.value })} className="col-span-2 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+            </div>
+            <button onClick={() => setShowQualitative(!showQualitative)} className="text-[10px] text-slate-500 hover:text-slate-300 link mt-1 w-full text-left">
+                {showQualitative ? '－ Hide qualitative data' : '＋ Add qualitative data (optional)'}
+            </button>
+            {showQualitative && (
+                <div className="grid grid-cols-2 gap-2 border-t border-slate-700/50 pt-2 mt-2">
+                    <input placeholder="Color" value={newSample.Color} onChange={e => setNewSample({ ...newSample, Color: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input placeholder="Odor" value={newSample.Odor} onChange={e => setNewSample({ ...newSample, Odor: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input placeholder="Taste" value={newSample.Taste} onChange={e => setNewSample({ ...newSample, Taste: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input type="number" placeholder="HPTLC Rf Value" value={newSample.HPTLCRf} onChange={e => setNewSample({ ...newSample, HPTLCRf: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input type="number" placeholder="Foreign Matter %" value={newSample.ForeignMatter} onChange={e => setNewSample({ ...newSample, ForeignMatter: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors col-span-2" />
+                    {['Alkaloids', 'Flavonoids', 'Steroids', 'Polyphenols', 'Saponins', 'Sugars'].map(f => (
+                        <select key={f} value={(newSample as any)[f]} onChange={e => setNewSample({ ...newSample, [f]: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 outline-none focus:border-indigo-500 transition-colors">
+                            <option value="">{f}: —</option>
+                            <option value="Pass">Pass</option>
+                            <option value="Fail">Fail</option>
+                        </select>
+                    ))}
+                </div>
+            )}
+            {validationError && <p className="text-red-400 text-xs mt-1">{validationError}</p>}
+            <button onClick={handleAdd} className="mt-2 w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 rounded py-1.5 transition-colors font-medium text-xs">
+                Add to Dataset
+            </button>
+        </div>
+    );
+};
+
+const EditSampleForm = ({ sample, onSave, onCancel }: { sample: Sample, onSave: (updated: Sample) => void, onCancel: () => void }) => {
+    const [editValues, setEditValues] = useState<any>({
+        Brand: sample.Brand,
+        MoisturePct: String(sample.MoisturePct),
+        TotalAsh: String(sample.TotalAsh),
+        AcidInsolAsh: String(sample.AcidInsolAsh),
+        HeavyMetalPpm: String(sample.HeavyMetalPpm),
+        ActiveCompoundPct: String(sample.ActiveCompoundPct),
+        WaterExtractPct: String(sample.WaterExtractPct),
+        AlcoholExtractPct: String(sample.AlcoholExtractPct),
+        BulkDensity: String(sample.BulkDensity),
+        TapDensity: String(sample.TapDensity),
+        pH: String(sample.pH),
+        Color: sample.Color || '',
+        Odor: sample.Odor || '',
+        Taste: sample.Taste || '',
+        ForeignMatter: sample.ForeignMatter !== undefined ? String(sample.ForeignMatter) : '',
+        HPTLCRf: sample.HPTLCRf !== undefined ? String(sample.HPTLCRf) : '',
+        Alkaloids: sample.Alkaloids || '',
+        Flavonoids: sample.Flavonoids || '',
+        Steroids: sample.Steroids || '',
+        Polyphenols: sample.Polyphenols || '',
+        Saponins: sample.Saponins || '',
+        Sugars: sample.Sugars || ''
+    });
+    const [validationError, setValidationError] = useState('');
+    const [showQualitativeEdit, setShowQualitativeEdit] = useState(false);
+
+    const handleSave = () => {
+        const { Brand, MoisturePct, TotalAsh, AcidInsolAsh, HeavyMetalPpm, ActiveCompoundPct, WaterExtractPct, AlcoholExtractPct, BulkDensity, TapDensity, pH, Color, Odor, Taste, ForeignMatter, HPTLCRf, Alkaloids, Flavonoids, Steroids, Polyphenols, Saponins, Sugars } = editValues;
+        const m = parseFloat(MoisturePct);
+        const a = parseFloat(TotalAsh);
+        const aia = parseFloat(AcidInsolAsh);
+        const hm = parseFloat(HeavyMetalPpm);
+        const ac = parseFloat(ActiveCompoundPct);
+        const we = parseFloat(WaterExtractPct);
+        const ae = parseFloat(AlcoholExtractPct);
+        const bd = parseFloat(BulkDensity);
+        const td = parseFloat(TapDensity);
+        const p = parseFloat(pH);
+        if (!Brand.trim() || isNaN(m) || isNaN(a) || isNaN(aia) || isNaN(hm) || isNaN(ac) || isNaN(we) || isNaN(ae) || isNaN(bd) || isNaN(td) || isNaN(p) || m < 0 || a < 0 || aia < 0 || hm < 0 || ac < 0 || we < 0 || ae < 0 || bd <= 0 || td <= 0 || p < 0) {
+            setValidationError('Please fill all 10 numerical fields correctly (non-negative numbers).');
+            return;
+        }
+
+        const customData: Sample = {
+            SampleID: sample.SampleID, Brand, MoisturePct: m, TotalAsh: a, AcidInsolAsh: aia, HeavyMetalPpm: hm,
+            ActiveCompoundPct: ac, WaterExtractPct: we, AlcoholExtractPct: ae, BulkDensity: bd, TapDensity: td, pH: p
+        };
+        if (Color) customData.Color = Color;
+        if (Odor) customData.Odor = Odor;
+        if (Taste) customData.Taste = Taste;
+        if (ForeignMatter) customData.ForeignMatter = parseFloat(ForeignMatter);
+        if (HPTLCRf) customData.HPTLCRf = parseFloat(HPTLCRf);
+        if (Alkaloids) customData.Alkaloids = Alkaloids as any;
+        if (Flavonoids) customData.Flavonoids = Flavonoids as any;
+        if (Steroids) customData.Steroids = Steroids as any;
+        if (Polyphenols) customData.Polyphenols = Polyphenols as any;
+        if (Saponins) customData.Saponins = Saponins as any;
+        if (Sugars) customData.Sugars = Sugars as any;
+
+        onSave(customData);
+    };
+
+    return (
+        <div className="p-3 bg-slate-900/50 rounded-lg border border-indigo-500/30 space-y-2 drop-shadow-md">
+            <input autoFocus placeholder="Brand" value={editValues.Brand || ''} onChange={e => setEditValues({ ...editValues, Brand: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+            <div className="grid grid-cols-2 gap-2">
+                <input type="number" placeholder="Moisture %" value={editValues.MoisturePct || ''} onChange={e => setEditValues({ ...editValues, MoisturePct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Total Ash %" value={editValues.TotalAsh || ''} onChange={e => setEditValues({ ...editValues, TotalAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Acid Insol. Ash %" value={editValues.AcidInsolAsh || ''} onChange={e => setEditValues({ ...editValues, AcidInsolAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Heavy Metal ppm" value={editValues.HeavyMetalPpm || ''} onChange={e => setEditValues({ ...editValues, HeavyMetalPpm: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Active Compound %" value={editValues.ActiveCompoundPct || ''} onChange={e => setEditValues({ ...editValues, ActiveCompoundPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Water Extract %" value={editValues.WaterExtractPct || ''} onChange={e => setEditValues({ ...editValues, WaterExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Alcohol Extract %" value={editValues.AlcoholExtractPct || ''} onChange={e => setEditValues({ ...editValues, AlcoholExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Bulk Density" value={editValues.BulkDensity || ''} onChange={e => setEditValues({ ...editValues, BulkDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="Tap Density" value={editValues.TapDensity || ''} onChange={e => setEditValues({ ...editValues, TapDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                <input type="number" placeholder="pH" value={editValues.pH || ''} onChange={e => setEditValues({ ...editValues, pH: e.target.value })} className="col-span-2 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+            </div>
+            <button onClick={() => setShowQualitativeEdit(!showQualitativeEdit)} className="text-xs text-slate-500 hover:text-slate-300 link">
+                {showQualitativeEdit ? '－ Hide qualitative data' : '＋ Add qualitative data (optional)'}
+            </button>
+            {showQualitativeEdit && (
+                <div className="grid grid-cols-2 gap-2 border-t border-slate-700/50 pt-2 mt-2">
+                    <input placeholder="Color" value={editValues.Color || ''} onChange={e => setEditValues({ ...editValues, Color: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input placeholder="Odor" value={editValues.Odor || ''} onChange={e => setEditValues({ ...editValues, Odor: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input placeholder="Taste" value={editValues.Taste || ''} onChange={e => setEditValues({ ...editValues, Taste: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input type="number" placeholder="HPTLC Rf Value" value={editValues.HPTLCRf || ''} onChange={e => setEditValues({ ...editValues, HPTLCRf: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
+                    <input type="number" placeholder="Foreign Matter %" value={editValues.ForeignMatter || ''} onChange={e => setEditValues({ ...editValues, ForeignMatter: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors col-span-2" />
+                    {['Alkaloids', 'Flavonoids', 'Steroids', 'Polyphenols', 'Saponins', 'Sugars'].map(f => (
+                        <select key={f} value={(editValues as any)?.[f] || ''} onChange={e => setEditValues({ ...editValues, [f]: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 outline-none focus:border-indigo-500 transition-colors">
+                            <option value="">{f}: —</option>
+                            <option value="Pass">Pass</option>
+                            <option value="Fail">Fail</option>
+                        </select>
+                    ))}
+                </div>
+            )}
+            {validationError && <p className="text-red-400 text-xs mt-1">{validationError}</p>}
+            <div className="flex justify-end gap-2 mt-2">
+                <button onClick={onCancel} className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors">Cancel</button>
+                <button onClick={handleSave} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-colors text-xs font-medium">Save</button>
+            </div>
+        </div>
+    );
+};
+
+export default function Dashboard() {
+    const customSampleCounter = useRef(1);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [hasAnalyzed, setHasAnalyzed] = useState(false);
+    const [analyzedData, setAnalyzedData] = useState<AnalyzedSample[]>([]);
+    const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+    const [customSamples, setCustomSamples] = useState<Sample[]>([]);
+    const [analysisError, setAnalysisError] = useState<string>('');
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [isStale, setIsStale] = useState(false);
+    const [editingSampleId, setEditingSampleId] = useState<string | null>(null);
+
 
     const handleReset = () => {
         setCustomSamples([]);
@@ -235,7 +507,7 @@ export default function Dashboard() {
         setHasAnalyzed(false);
         setAnalysisError('');
         setExpandedRowId(null);
-        setValidationError('');
+
         setShowAddForm(false);
     };
 
@@ -324,34 +596,51 @@ export default function Dashboard() {
     };
 
     // Filter data for scatter plot
-    const scatterCluster1 = analyzedData.filter(d => d.Cluster === 1);
-    const scatterCluster2 = analyzedData.filter(d => d.Cluster === 2);
-    const scatterCluster3 = analyzedData.filter(d => d.Cluster === 3);
+    const { scatterCluster1, scatterCluster2, scatterCluster3 } = useMemo(() => ({
+        scatterCluster1: analyzedData.filter(d => d.Cluster === 1),
+        scatterCluster2: analyzedData.filter(d => d.Cluster === 2),
+        scatterCluster3: analyzedData.filter(d => d.Cluster === 3),
+    }), [analyzedData]);
 
-    const allData = [...mockData, ...customSamples];
-    const dynamicBrandConsistencyData = computeBrandConsistency(analyzedData);
+    const allData = useMemo(() => [...mockData, ...customSamples], [customSamples]);
+    const dynamicBrandConsistencyData = useMemo(() => computeBrandConsistency(analyzedData), [analyzedData]);
     const totalSamples = allData.length;
-    const flaggedSamples = analyzedData.filter(s => s.Cluster === 2 || s.Cluster === 3).length;
-    const cleanSamples = analyzedData.filter(s => s.Cluster === 1).length;
+    const { flaggedSamples, cleanSamples } = useMemo(() => ({
+        flaggedSamples: analyzedData.filter(s => s.Cluster === 2 || s.Cluster === 3).length,
+        cleanSamples: analyzedData.filter(s => s.Cluster === 1).length,
+    }), [analyzedData]);
 
-    const clusterStats = {
-        1: { active: 0, heavy: 0, waterExtract: 0, alcoholExtract: 0 },
-        2: { active: 0, heavy: 0, waterExtract: 0, alcoholExtract: 0 },
-        3: { active: 0, heavy: 0, waterExtract: 0, alcoholExtract: 0 }
-    };
-
-    if (hasAnalyzed) {
-        [1, 2, 3].forEach(cNum => {
-            const clusterId = cNum as ClusterId;
-            const samples = analyzedData.filter(s => s.Cluster === clusterId);
-            if (samples.length > 0) {
-                clusterStats[clusterId].active = samples.reduce((acc, s) => acc + s.ActiveCompoundPct, 0) / samples.length;
-                clusterStats[clusterId].heavy = samples.reduce((acc, s) => acc + s.HeavyMetalPpm, 0) / samples.length;
-                clusterStats[clusterId].waterExtract = samples.reduce((acc, s) => acc + s.WaterExtractPct, 0) / samples.length;
-                clusterStats[clusterId].alcoholExtract = samples.reduce((acc, s) => acc + s.AlcoholExtractPct, 0) / samples.length;
+    const clusterStats = useMemo(() => {
+        const stats = {
+            1: { active: 0, heavy: 0, waterExtract: 0, alcoholExtract: 0 },
+            2: { active: 0, heavy: 0, waterExtract: 0, alcoholExtract: 0 },
+            3: { active: 0, heavy: 0, waterExtract: 0, alcoholExtract: 0 }
+        };
+        if (!hasAnalyzed) return stats;
+        ([1, 2, 3] as ClusterId[]).forEach(id => {
+            const s = analyzedData.filter(x => x.Cluster === id);
+            if (s.length > 0) {
+                stats[id].active = s.reduce((acc, x) => acc + x.ActiveCompoundPct, 0) / s.length;
+                stats[id].heavy = s.reduce((acc, x) => acc + x.HeavyMetalPpm, 0) / s.length;
+                stats[id].waterExtract = s.reduce((acc, x) => acc + x.WaterExtractPct, 0) / s.length;
+                stats[id].alcoholExtract = s.reduce((acc, x) => acc + x.AlcoholExtractPct, 0) / s.length;
             }
         });
-    }
+        return stats;
+    }, [analyzedData, hasAnalyzed]);
+
+    const clusterCounts = useMemo(() => ({
+        1: analyzedData.filter(s => s.Cluster === 1).length,
+        2: analyzedData.filter(s => s.Cluster === 2).length,
+        3: analyzedData.filter(s => s.Cluster === 3).length,
+    }), [analyzedData]);
+
+    const scatterXDomain = useMemo(() => {
+        if (analyzedData.length === 0) return [50, 100];
+        const min = Math.min(...analyzedData.map(d => d.ActiveCompoundPct));
+        const max = Math.max(...analyzedData.map(d => d.ActiveCompoundPct));
+        return [Math.max(0, Math.floor(min - 5)), Math.ceil(max + 2)];
+    }, [analyzedData]);
 
     return (
         <div className="flex flex-col h-full bg-slate-900 text-slate-100 font-sans">
@@ -366,15 +655,28 @@ export default function Dashboard() {
                 }
                 .delay-100 { animation-delay: 100ms; }
                 .delay-200 { animation-delay: 200ms; }
+                @keyframes pulse-border {
+                    0%, 100% { border-bottom-color: rgb(99 102 241 / 0.3); }
+                    50% { border-bottom-color: rgb(99 102 241 / 0.9); }
+                }
+                .analyzing-border {
+                    animation: pulse-border 1.2s ease-in-out infinite;
+                }
                 .delay-300 { animation-delay: 300ms; }
             `}</style>
             {/* Navbar */}
-            <header className="flex items-center justify-between px-6 py-4 bg-slate-800 border-b border-slate-700 shadow-md">
+            <header className={`flex items-center justify-between px-6 py-4 bg-slate-800 shadow-md ${isAnalyzing ? "border-b-2 border-b-indigo-500 analyzing-border" : hasAnalyzed && !isStale ? "border-b-2 border-b-green-500/50" : isStale ? "border-b-2 border-b-amber-500/50" : "border-b border-slate-700"}`}>
                 <div className="flex items-center gap-3">
                     <Beaker className="w-6 h-6 text-indigo-400" />
                     <h1 className="text-xl font-bold tracking-wide">DrugSecure <span className="text-slate-400 font-medium ml-2">— Lab Dashboard</span></h1>
                 </div>
                 <div className="flex items-center gap-4">
+                    {!hasAnalyzed && customSamples.length > 0 && (
+                        <div className="flex items-center gap-2 bg-amber-500/10 text-amber-400 text-xs font-medium px-3 py-1.5 rounded-full border border-amber-500/20 mr-2 animate-fade-slide-up">
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                            {customSamples.length} custom sample{customSamples.length > 1 ? 's' : ''} pending analysis
+                        </div>
+                    )}
                     {hasAnalyzed && (
                         <div className="flex items-center gap-3 mr-2 animate-fade-slide-up">
                             <span className="bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1 rounded-full border border-slate-600 flex items-center gap-1.5">
@@ -450,7 +752,7 @@ export default function Dashboard() {
                                                                 cluster === 2 ? 'text-amber-500' :
                                                                     'text-red-500'
                                                                 }`}>
-                                                                {CLUSTER_LABELS[cluster]}
+                                                                {CLUSTER_LABELS[cluster]} <span className="text-slate-500 font-normal text-xs ml-1">· {clusterCounts[cluster]}</span>
                                                             </span>
                                                         ) : (
                                                             <span className="text-slate-500">Pending</span>
@@ -462,30 +764,7 @@ export default function Dashboard() {
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     setEditingSampleId(sample.SampleID);
-                                                                    setEditValues({
-                                                                        Brand: sample.Brand,
-                                                                        MoisturePct: String(sample.MoisturePct),
-                                                                        TotalAsh: String(sample.TotalAsh),
-                                                                        AcidInsolAsh: String(sample.AcidInsolAsh),
-                                                                        HeavyMetalPpm: String(sample.HeavyMetalPpm),
-                                                                        ActiveCompoundPct: String(sample.ActiveCompoundPct),
-                                                                        WaterExtractPct: String(sample.WaterExtractPct),
-                                                                        AlcoholExtractPct: String(sample.AlcoholExtractPct),
-                                                                        BulkDensity: String(sample.BulkDensity),
-                                                                        TapDensity: String(sample.TapDensity),
-                                                                        pH: String(sample.pH),
-                                                                        Color: sample.Color || '',
-                                                                        Odor: sample.Odor || '',
-                                                                        Taste: sample.Taste || '',
-                                                                        ForeignMatter: sample.ForeignMatter !== undefined ? String(sample.ForeignMatter) : '',
-                                                                        HPTLCRf: sample.HPTLCRf !== undefined ? String(sample.HPTLCRf) : '',
-                                                                        Alkaloids: sample.Alkaloids || '',
-                                                                        Flavonoids: sample.Flavonoids || '',
-                                                                        Steroids: sample.Steroids || '',
-                                                                        Polyphenols: sample.Polyphenols || '',
-                                                                        Saponins: sample.Saponins || '',
-                                                                        Sugars: sample.Sugars || ''
-                                                                    });
+
                                                                     setExpandedRowId(null);
                                                                 }}
                                                                 className="text-slate-400 hover:text-indigo-400 transition-colors"
@@ -509,165 +788,13 @@ export default function Dashboard() {
                                             {editingSampleId === sample.SampleID ? (
                                                 <tr className="bg-slate-800/80 border-b-0">
                                                     <td colSpan={3} className="px-4 py-3 border-t-0 text-sm">
-                                                        <div className="p-3 bg-slate-900/50 rounded-lg border border-indigo-500/30 space-y-2 drop-shadow-md">
-                                                            <input autoFocus placeholder="Brand" value={editValues?.Brand || ''} onChange={e => setEditValues({ ...editValues!, Brand: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                <input type="number" placeholder="Moisture %" value={editValues?.MoisturePct || ''} onChange={e => setEditValues({ ...editValues!, MoisturePct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Total Ash %" value={editValues?.TotalAsh || ''} onChange={e => setEditValues({ ...editValues!, TotalAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Acid Insol. Ash %" value={editValues?.AcidInsolAsh || ''} onChange={e => setEditValues({ ...editValues!, AcidInsolAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Heavy Metal ppm" value={editValues?.HeavyMetalPpm || ''} onChange={e => setEditValues({ ...editValues!, HeavyMetalPpm: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Active Compound %" value={editValues?.ActiveCompoundPct || ''} onChange={e => setEditValues({ ...editValues!, ActiveCompoundPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Water Extract %" value={editValues?.WaterExtractPct || ''} onChange={e => setEditValues({ ...editValues!, WaterExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Alcohol Extract %" value={editValues?.AlcoholExtractPct || ''} onChange={e => setEditValues({ ...editValues!, AlcoholExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Bulk Density" value={editValues?.BulkDensity || ''} onChange={e => setEditValues({ ...editValues!, BulkDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="Tap Density" value={editValues?.TapDensity || ''} onChange={e => setEditValues({ ...editValues!, TapDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                <input type="number" placeholder="pH" value={editValues?.pH || ''} onChange={e => setEditValues({ ...editValues!, pH: e.target.value })} className="col-span-2 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                            </div>
-                                                            <button onClick={() => setShowQualitative(!showQualitative)} className="text-xs text-slate-500 hover:text-slate-300 link">
-                                                                {showQualitative ? '－ Hide qualitative data' : '＋ Add qualitative data (optional)'}
-                                                            </button>
-                                                            {showQualitative && (
-                                                                <div className="grid grid-cols-2 gap-2 border-t border-slate-700/50 pt-2 mt-2">
-                                                                    <input placeholder="Color" value={editValues?.Color || ''} onChange={e => setEditValues({ ...editValues!, Color: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                    <input placeholder="Odor" value={editValues?.Odor || ''} onChange={e => setEditValues({ ...editValues!, Odor: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                    <input placeholder="Taste" value={editValues?.Taste || ''} onChange={e => setEditValues({ ...editValues!, Taste: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                    <input type="number" placeholder="HPTLC Rf Value" value={editValues?.HPTLCRf || ''} onChange={e => setEditValues({ ...editValues!, HPTLCRf: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                                                    <input type="number" placeholder="Foreign Matter %" value={editValues?.ForeignMatter || ''} onChange={e => setEditValues({ ...editValues!, ForeignMatter: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors col-span-2" />
-                                                                    {['Alkaloids', 'Flavonoids', 'Steroids', 'Polyphenols', 'Saponins', 'Sugars'].map(f => (
-                                                                        <select key={f} value={(editValues as any)?.[f] || ''} onChange={e => setEditValues({ ...editValues!, [f]: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 outline-none focus:border-indigo-500 transition-colors">
-                                                                            <option value="">{f}: —</option>
-                                                                            <option value="Pass">Pass</option>
-                                                                            <option value="Fail">Fail</option>
-                                                                        </select>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                            {validationError && editingSampleId === sample.SampleID && <p className="text-red-400 text-xs mt-1">{validationError}</p>}
-                                                            <div className="flex justify-end gap-2 mt-2">
-                                                                <button onClick={() => { setEditingSampleId(null); setValidationError(''); }} className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors">Cancel</button>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        if (!editValues) return;
-                                                                        const { Brand, MoisturePct, TotalAsh, AcidInsolAsh, HeavyMetalPpm, ActiveCompoundPct, WaterExtractPct, AlcoholExtractPct, BulkDensity, TapDensity, pH, Color, Odor, Taste, ForeignMatter, HPTLCRf, Alkaloids, Flavonoids, Steroids, Polyphenols, Saponins, Sugars } = editValues;
-                                                                        const m = parseFloat(MoisturePct);
-                                                                        const a = parseFloat(TotalAsh);
-                                                                        const aia = parseFloat(AcidInsolAsh);
-                                                                        const hm = parseFloat(HeavyMetalPpm);
-                                                                        const ac = parseFloat(ActiveCompoundPct);
-                                                                        const we = parseFloat(WaterExtractPct);
-                                                                        const ae = parseFloat(AlcoholExtractPct);
-                                                                        const bd = parseFloat(BulkDensity);
-                                                                        const td = parseFloat(TapDensity);
-                                                                        const p = parseFloat(pH);
-                                                                        if (!Brand.trim() || isNaN(m) || isNaN(a) || isNaN(aia) || isNaN(hm) || isNaN(ac) || isNaN(we) || isNaN(ae) || isNaN(bd) || isNaN(td) || isNaN(p) || m < 0 || a < 0 || aia < 0 || hm < 0 || ac < 0 || we < 0 || ae < 0 || bd <= 0 || td <= 0 || p < 0) {
-                                                                            setValidationError('Please fill all 10 numerical fields correctly (non-negative numbers).');
-                                                                            return;
-                                                                        }
-
-                                                                        const customData: Sample = {
-                                                                            SampleID: sample.SampleID, Brand, MoisturePct: m, TotalAsh: a, AcidInsolAsh: aia, HeavyMetalPpm: hm,
-                                                                            ActiveCompoundPct: ac, WaterExtractPct: we, AlcoholExtractPct: ae, BulkDensity: bd, TapDensity: td, pH: p
-                                                                        };
-                                                                        if (Color) customData.Color = Color;
-                                                                        if (Odor) customData.Odor = Odor;
-                                                                        if (Taste) customData.Taste = Taste;
-                                                                        if (ForeignMatter) customData.ForeignMatter = parseFloat(ForeignMatter);
-                                                                        if (HPTLCRf) customData.HPTLCRf = parseFloat(HPTLCRf);
-                                                                        if (Alkaloids) customData.Alkaloids = Alkaloids as any;
-                                                                        if (Flavonoids) customData.Flavonoids = Flavonoids as any;
-                                                                        if (Steroids) customData.Steroids = Steroids as any;
-                                                                        if (Polyphenols) customData.Polyphenols = Polyphenols as any;
-                                                                        if (Saponins) customData.Saponins = Saponins as any;
-                                                                        if (Sugars) customData.Sugars = Sugars as any;
-
-                                                                        setCustomSamples(customSamples.map(cs => cs.SampleID === sample.SampleID ? customData : cs));
-                                                                        setEditingSampleId(null);
-                                                                        setEditValues(null);
-                                                                        setValidationError('');
-                                                                        if (hasAnalyzed) setIsStale(true);
-                                                                    }}
-                                                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-colors text-xs font-medium"
-                                                                >
-                                                                    Save
-                                                                </button>
-                                                            </div>
-                                                        </div>
+                                                        <EditSampleForm sample={sample} onSave={(updated) => { setCustomSamples(customSamples.map(cs => cs.SampleID === sample.SampleID ? updated : cs)); setEditingSampleId(null); if (hasAnalyzed) setIsStale(true); }} onCancel={() => setEditingSampleId(null)} />
                                                     </td>
                                                 </tr>
                                             ) : isExpanded && (
                                                 <tr className="bg-slate-800/80 border-b-0">
                                                     <td colSpan={3} className="px-4 py-3 border-t-0">
-                                                        <div className="flex flex-col gap-3 text-xs text-slate-400 bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 shadow-inner">
-                                                            {/* Section A: Physicochemical */}
-                                                            <div>
-                                                                <h4 className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2 pb-1 border-b border-slate-700/50">Physicochemical Parameters</h4>
-                                                                <div className="grid grid-cols-2 gap-2">
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">Moisture %:</span><span className="font-mono text-slate-300">{sample.MoisturePct}</span>{sample.MoisturePct <= INDUSTRY_BENCHMARKS.MoisturePct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">Total Ash %:</span><span className="font-mono text-slate-300">{sample.TotalAsh}</span>{sample.TotalAsh <= INDUSTRY_BENCHMARKS.TotalAsh ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">Acid Insol. Ash %:</span><span className="font-mono text-slate-300">{sample.AcidInsolAsh}</span>{sample.AcidInsolAsh <= INDUSTRY_BENCHMARKS.AcidInsolAsh ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">Heavy Metal ppm:</span><span className="font-mono text-slate-300">{sample.HeavyMetalPpm}</span>{sample.HeavyMetalPpm <= INDUSTRY_BENCHMARKS.HeavyMetalPpm ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">Active Compound %:</span><span className="font-mono text-slate-300">{sample.ActiveCompoundPct}</span>{sample.ActiveCompoundPct >= INDUSTRY_BENCHMARKS.ActiveCompoundPct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">Water Extract %:</span><span className="font-mono text-slate-300">{sample.WaterExtractPct}</span>{sample.WaterExtractPct >= INDUSTRY_BENCHMARKS.WaterExtractPct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">Alcohol Extract %:</span><span className="font-mono text-slate-300">{sample.AlcoholExtractPct}</span>{sample.AlcoholExtractPct >= INDUSTRY_BENCHMARKS.AlcoholExtractPct ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                    <div className="flex items-center gap-1.5"><span className="w-32">pH:</span><span className="font-mono text-slate-300">{sample.pH}</span>{sample.pH >= INDUSTRY_BENCHMARKS.pH.min && sample.pH <= INDUSTRY_BENCHMARKS.pH.max ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-red-500" />}</div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Section B: Powder Flow */}
-                                                            <div>
-                                                                <h4 className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2 pb-1 border-b border-slate-700/50">Powder Flow</h4>
-                                                                <div className="grid grid-cols-2 gap-2">
-                                                                    <div className="flex items-center gap-1"><span className="w-32">Bulk Density:</span><span className="font-mono text-slate-300">{sample.BulkDensity} <span className="text-slate-500 text-[10px]">g/mL</span></span></div>
-                                                                    <div className="flex items-center gap-1"><span className="w-32">Tap Density:</span><span className="font-mono text-slate-300">{sample.TapDensity} <span className="text-slate-500 text-[10px]">g/mL</span></span></div>
-                                                                    <div className="flex items-center gap-1"><span className="w-32">Carr's Index:</span>
-                                                                        {(() => {
-                                                                            const ci = ((sample.TapDensity - sample.BulkDensity) / sample.TapDensity) * 100;
-                                                                            const ciVal = ci.toFixed(1);
-                                                                            let color = 'text-green-400';
-                                                                            let label = 'Excellent/Good';
-                                                                            if (ci >= 15 && ci <= 25) { color = 'text-amber-400'; label = 'Passable'; }
-                                                                            else if (ci > 25) { color = 'text-red-400'; label = 'Poor'; }
-                                                                            return <span className={`font-mono ${color}`}>{ciVal}% <span className="text-slate-500 text-[10px]">({label})</span></span>;
-                                                                        })()}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1"><span className="w-32">Hausner's Ratio:</span>
-                                                                        {(() => {
-                                                                            const hr = sample.TapDensity / sample.BulkDensity;
-                                                                            const hrVal = hr.toFixed(2);
-                                                                            let color = 'text-green-400';
-                                                                            if (hr >= 1.2 && hr <= 1.35) color = 'text-amber-400';
-                                                                            else if (hr > 1.35) color = 'text-red-400';
-                                                                            return <span className={`font-mono ${color}`}>{hrVal}</span>;
-                                                                        })()}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Section C: Qualitative */}
-                                                            {(sample.Color || sample.Odor || sample.Taste || sample.ForeignMatter !== undefined || sample.HPTLCRf !== undefined || sample.Alkaloids || sample.Flavonoids || sample.Steroids || sample.Polyphenols || sample.Saponins || sample.Sugars) && (
-                                                                <div>
-                                                                    <h4 className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2 pb-1 border-b border-slate-700/50">Qualitative Profile</h4>
-                                                                    <div className="mb-2 text-slate-300">
-                                                                        {sample.Color && <span className="mr-3">Color: <span className="text-white">{sample.Color}</span></span>}
-                                                                        {sample.Odor && <span className="mr-3">Odor: <span className="text-white">{sample.Odor}</span></span>}
-                                                                        {sample.Taste && <span className="mr-3">Taste: <span className="text-white">{sample.Taste}</span></span>}
-                                                                        {sample.ForeignMatter !== undefined && <span className="mr-3">Foreign Matter: <span className="text-white">{sample.ForeignMatter}%</span></span>}
-                                                                        {sample.HPTLCRf !== undefined && <span>HPTLC Rf: <span className="text-white">{sample.HPTLCRf}</span></span>}
-                                                                    </div>
-                                                                    <div className="flex flex-wrap gap-2">
-                                                                        {['Alkaloids', 'Flavonoids', 'Steroids', 'Polyphenols', 'Saponins', 'Sugars'].map(test => {
-                                                                            const val = (sample as any)[test];
-                                                                            if (!val) return <span key={test} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 border border-slate-700">{test}: —</span>;
-                                                                            return (
-                                                                                <span key={test} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border ${val === 'Pass' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                                                                    {test}: {val}
-                                                                                </span>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                        <SampleDetailPanel sample={sample} />
                                                     </td>
                                                 </tr>
                                             )}
@@ -677,62 +804,23 @@ export default function Dashboard() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="p-3 border-t border-slate-700 bg-slate-800/80 mt-auto">
+                    <div className="p-3 border-t border-slate-700 bg-slate-800/80 flex flex-col max-h-[75%] overflow-y-auto mt-auto shrink-0">
                         {showAddForm && (
-                            <div className="mb-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50 space-y-2 text-sm drop-shadow-md overflow-hidden">
-                                <div className="mb-3 pb-3 border-b border-slate-700/50 flex flex-col gap-2">
-                                    <h4 className="text-xs text-indigo-400 font-medium tracking-wide font-mono uppercase">Smart Paste Parser</h4>
-                                    <textarea
-                                        placeholder="Paste tab/comma separated numerical values here..."
-                                        value={pasteInput}
-                                        onChange={(e) => setPasteInput(e.target.value)}
-                                        className="w-full h-16 bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors text-xs resize-none"
-                                    />
-                                    <div className="flex justify-between items-center gap-2">
-                                        {pasteError ? <span className="text-red-400 text-[10px] leading-tight flex-1">{pasteError}</span> : <span className="text-slate-500 text-[10px] leading-tight flex-1">Expected: Brand, Moisture, TotalAsh, AcidInsolAsh, HeavyMetal, Active, WaterExt, AlcExt, BulkD, TapD, pH</span>}
-                                        <button onClick={() => parsePastedData(pasteInput)} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[10px] font-medium transition-colors shrink-0">Parse Data</button>
-                                    </div>
-                                </div>
-                                <input placeholder="Brand" value={newSample.Brand} onChange={e => setNewSample({ ...newSample, Brand: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input type="number" placeholder="Moisture %" value={newSample.MoisturePct} onChange={e => setNewSample({ ...newSample, MoisturePct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Total Ash %" value={newSample.TotalAsh} onChange={e => setNewSample({ ...newSample, TotalAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Acid Insol. Ash %" value={newSample.AcidInsolAsh} onChange={e => setNewSample({ ...newSample, AcidInsolAsh: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Heavy Metal ppm" value={newSample.HeavyMetalPpm} onChange={e => setNewSample({ ...newSample, HeavyMetalPpm: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Active Compound %" value={newSample.ActiveCompoundPct} onChange={e => setNewSample({ ...newSample, ActiveCompoundPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Water Extract %" value={newSample.WaterExtractPct} onChange={e => setNewSample({ ...newSample, WaterExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Alcohol Extract %" value={newSample.AlcoholExtractPct} onChange={e => setNewSample({ ...newSample, AlcoholExtractPct: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Bulk Density" value={newSample.BulkDensity} onChange={e => setNewSample({ ...newSample, BulkDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="Tap Density" value={newSample.TapDensity} onChange={e => setNewSample({ ...newSample, TapDensity: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                    <input type="number" placeholder="pH" value={newSample.pH} onChange={e => setNewSample({ ...newSample, pH: e.target.value })} className="col-span-2 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                </div>
-                                <button onClick={() => setShowQualitative(!showQualitative)} className="text-[10px] text-slate-500 hover:text-slate-300 link mt-1 w-full text-left">
-                                    {showQualitative ? '－ Hide qualitative data' : '＋ Add qualitative data (optional)'}
-                                </button>
-                                {showQualitative && (
-                                    <div className="grid grid-cols-2 gap-2 border-t border-slate-700/50 pt-2 mt-2">
-                                        <input placeholder="Color" value={newSample.Color} onChange={e => setNewSample({ ...newSample, Color: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                        <input placeholder="Odor" value={newSample.Odor} onChange={e => setNewSample({ ...newSample, Odor: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                        <input placeholder="Taste" value={newSample.Taste} onChange={e => setNewSample({ ...newSample, Taste: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                        <input type="number" placeholder="HPTLC Rf Value" value={newSample.HPTLCRf} onChange={e => setNewSample({ ...newSample, HPTLCRf: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors" />
-                                        <input type="number" placeholder="Foreign Matter %" value={newSample.ForeignMatter} onChange={e => setNewSample({ ...newSample, ForeignMatter: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors col-span-2" />
-                                        {['Alkaloids', 'Flavonoids', 'Steroids', 'Polyphenols', 'Saponins', 'Sugars'].map(f => (
-                                            <select key={f} value={(newSample as any)[f]} onChange={e => setNewSample({ ...newSample, [f]: e.target.value })} className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 outline-none focus:border-indigo-500 transition-colors">
-                                                <option value="">{f}: —</option>
-                                                <option value="Pass">Pass</option>
-                                                <option value="Fail">Fail</option>
-                                            </select>
-                                        ))}
-                                    </div>
-                                )}
-                                {validationError && !editingSampleId && <p className="text-red-400 text-xs mt-1">{validationError}</p>}
-                                <button onClick={handleAddSample} className="mt-2 w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 rounded py-1.5 transition-colors font-medium text-xs">
-                                    Add to Dataset
-                                </button>
-                            </div>
+                            <AddSampleForm
+                                onAdd={(sample) => {
+                                    setCustomSamples([...customSamples, sample]);
+                                    if (hasAnalyzed) setIsStale(true);
+                                    setShowAddForm(false);
+                                }}
+                                nextId={() => {
+                                    const id = `C-${String(customSampleCounter.current).padStart(3, '0')}`;
+                                    customSampleCounter.current += 1;
+                                    return id;
+                                }}
+                            />
                         )}
                         <button
-                            onClick={() => { setShowAddForm(!showAddForm); setValidationError(''); }}
+                            onClick={() => { setShowAddForm(!showAddForm); }}
                             className="w-full flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded-lg transition-colors border border-dashed border-slate-700"
                         >
                             <Plus className="w-4 h-4" />
@@ -770,18 +858,56 @@ export default function Dashboard() {
                     )}
 
                     {!hasAnalyzed ? (
-                        <div className="flex-1 flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-700 rounded-xl bg-slate-800/30">
+                        <div className="flex-1 flex flex-col items-center justify-center rounded-xl bg-slate-800/30 border-2 border-dashed border-slate-700 p-12">
                             {isAnalyzing ? (
                                 <>
-                                    <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mb-4" />
-                                    <p className="text-lg font-medium text-slate-300">Running advanced clustering analysis...</p>
-                                    <p className="text-sm mt-2 text-slate-500">Evaluating active compounds and heavy metal ppm</p>
+                                    <div className="relative mb-6">
+                                        <div className="w-16 h-16 rounded-full border-2 border-indigo-500/20 flex items-center justify-center">
+                                            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                                        </div>
+                                    </div>
+                                    <p className="text-base font-semibold text-slate-300 mb-1">Running K-Means Clustering</p>
+                                    <p className="text-xs text-slate-500 mb-4">Normalizing {allData.length} samples across 10 features...</p>
+                                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                        <span>Applying WHO / FSSAI benchmarks</span>
+                                    </div>
                                 </>
                             ) : (
                                 <>
-                                    <Beaker className="w-12 h-12 mb-4 opacity-50" />
-                                    <p className="text-lg font-medium">Awaiting Analysis</p>
-                                    <p className="text-sm mt-2">Click "Run Analysis" to generate insights.</p>
+                                    <div className="relative mb-6">
+                                        <div className="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                                            <Beaker className="w-9 h-9 text-indigo-400/60" />
+                                        </div>
+                                        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                                            <div className="w-2 h-2 rounded-full bg-slate-500" />
+                                        </div>
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-slate-300 mb-2">Ready to Analyze</h3>
+                                    <p className="text-sm text-slate-500 text-center max-w-xs mb-6">
+                                        K-Means clustering will group your {allData.length} samples across 3 quality tiers benchmarked against WHO / FSSAI guidelines.
+                                    </p>
+                                    <div className="grid grid-cols-3 gap-3 w-full max-w-sm mb-6">
+                                        <div className="bg-slate-800 rounded-lg p-3 text-center border border-slate-700">
+                                            <div className="text-xl font-bold text-slate-200">{allData.length}</div>
+                                            <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">Samples</div>
+                                        </div>
+                                        <div className="bg-slate-800 rounded-lg p-3 text-center border border-slate-700">
+                                            <div className="text-xl font-bold text-slate-200">10</div>
+                                            <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">Features</div>
+                                        </div>
+                                        <div className="bg-slate-800 rounded-lg p-3 text-center border border-slate-700">
+                                            <div className="text-xl font-bold text-slate-200">3</div>
+                                            <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">Clusters</div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleRunAnalysis}
+                                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors shadow-md"
+                                    >
+                                        <Activity className="w-4 h-4" />
+                                        Run Analysis
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -794,18 +920,19 @@ export default function Dashboard() {
                                 <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md h-80 flex flex-col animate-fade-slide-up delay-100">
                                     <h3 className="text-md font-semibold text-slate-200 mb-1">Chemical Profile Clustering</h3>
                                     <p className="text-xs text-indigo-400/70 mb-2">Reference: WHO / FSSAI Herbal Medicine Guidelines — Heavy Metal &lt; 10 ppm, Active Compound &gt; 85%, Moisture &lt; 8%, Ash &lt; 5%</p>
-                                    <div className="flex-1 w-full min-h-0">
+                                    <div className="flex-1 w-full min-h-0 relative">
+                                        <div className="absolute right-2 bottom-0 text-[10px] text-slate-500 z-10 pointer-events-none pb-2 pr-2">▲ Triangle = Custom sample</div>
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <ScatterChart margin={{ top: 10, right: 30, bottom: 20, left: 0 }}>
+                                            <ScatterChart margin={{ top: 10, right: 30, bottom: 40, left: 15 }}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                                                 <XAxis
                                                     type="number"
                                                     dataKey="ActiveCompoundPct"
                                                     name="Active Compound (%)"
-                                                    domain={[60, 100]}
+                                                    domain={scatterXDomain}
                                                     stroke="#94a3b8"
                                                     tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                    label={{ value: 'Active Compound (%)', position: 'insideBottom', offset: -10, fill: '#94a3b8', fontSize: 12 }}
+                                                    label={{ value: 'Active Compound (%)', position: 'insideBottom', offset: -25, fill: '#94a3b8', fontSize: 12 }}
                                                 />
                                                 <YAxis
                                                     type="number"
@@ -813,7 +940,7 @@ export default function Dashboard() {
                                                     name="Heavy Metals (ppm)"
                                                     stroke="#94a3b8"
                                                     tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                    label={{ value: 'Heavy Metals (ppm)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }}
+                                                    label={{ value: 'Heavy Metals (ppm)', angle: -90, position: 'insideLeft', offset: 25, fill: '#94a3b8', fontSize: 12 }}
                                                 />
                                                 <RechartsTooltip
                                                     cursor={{ strokeDasharray: '3 3' }}
@@ -821,17 +948,17 @@ export default function Dashboard() {
                                                 />
                                                 <ReferenceLine x={INDUSTRY_BENCHMARKS.ActiveCompoundPct} stroke="#6366f1" strokeDasharray="4 4" label="WHO Min" />
                                                 <ReferenceLine y={INDUSTRY_BENCHMARKS.HeavyMetalPpm} stroke="#6366f1" strokeDasharray="4 4" label="WHO Max" />
-                                                <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px', color: '#cbd5e1' }} />
-                                                <Scatter name="High Purity" data={scatterCluster1} fill={CLUSTER_COLORS[1]} />
-                                                <Scatter name="Moderate Risk" data={scatterCluster2} fill={CLUSTER_COLORS[2]} />
-                                                <Scatter name="Contaminated" data={scatterCluster3} fill={CLUSTER_COLORS[3]} />
+                                                <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#cbd5e1' }} />
+                                                <Scatter name="High Purity" data={scatterCluster1} fill={CLUSTER_COLORS[1]} shape={<CustomDot />} />
+                                                <Scatter name="Moderate Risk" data={scatterCluster2} fill={CLUSTER_COLORS[2]} shape={<CustomDot />} />
+                                                <Scatter name="Contaminated" data={scatterCluster3} fill={CLUSTER_COLORS[3]} shape={<CustomDot />} />
                                             </ScatterChart>
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
 
                                 {/* Bar Chart */}
-                                <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md h-64 flex flex-col animate-fade-slide-up delay-200">
+                                <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex flex-col animate-fade-slide-up delay-200" style={{ height: `${Math.max(200, dynamicBrandConsistencyData.length * 56 + 60)}px` }}>
                                     <h3 className="text-md font-semibold text-slate-200 mb-4">Brand Consistency Score (% High Purity)</h3>
                                     <div className="flex-1 w-full min-h-0">
                                         <ResponsiveContainer width="100%" height="100%">
@@ -856,6 +983,8 @@ export default function Dashboard() {
                                                 />
                                                 <RechartsTooltip
                                                     contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f1f5f9', borderRadius: '0.5rem' }}
+                                                    itemStyle={{ color: '#f8fafc' }}
+                                                    labelStyle={{ color: '#cbd5e1' }}
                                                     formatter={(value) => [`${value}%`, 'Consistency Score']}
                                                     cursor={{ fill: '#334155', opacity: 0.4 }}
                                                 />
@@ -878,74 +1007,9 @@ export default function Dashboard() {
                             {/* Summary Cards */}
                             <div className="grid grid-cols-3 gap-4 animate-fade-slide-up delay-300">
                                 {/* Cluster 1 Card */}
-                                <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 border-t-4 border-t-green-500 shadow-md">
-                                    <h3 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Cluster 1</h3>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                        <span className="text-lg font-bold text-slate-100">High Purity</span>
-                                    </div>
-                                    <div className="space-y-1 text-sm text-slate-300">
-                                        <p className="flex justify-between"><span>Avg Active:</span> <span className="font-mono text-green-400">{clusterStats[1].active.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between"><span>Avg Metal:</span> <span className="font-mono text-green-400">{clusterStats[1].heavy.toFixed(1)} ppm</span></p>
-                                        <p className="flex justify-between"><span>Avg Water Ext:</span> <span className="font-mono text-green-400">{clusterStats[1].waterExtract.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between"><span>Avg Alcohol Ext:</span> <span className="font-mono text-green-400">{clusterStats[1].alcoholExtract.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
-                                            <span>WHO Compliant:</span>
-                                            {isCompliant(clusterStats[1]) ? (
-                                                <span className="flex items-center gap-1 text-green-400 font-medium"><CheckCircle className="w-3.5 h-3.5" /> Yes</span>
-                                            ) : (
-                                                <span className="flex items-center gap-1 text-red-400 font-medium"><XCircle className="w-3.5 h-3.5" /> No</span>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Cluster 2 Card */}
-                                <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 border-t-4 border-t-amber-500 shadow-md">
-                                    <h3 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Cluster 2</h3>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                                        <span className="text-lg font-bold text-slate-100">Moderate Risk</span>
-                                    </div>
-                                    <div className="space-y-1 text-sm text-slate-300">
-                                        <p className="flex justify-between"><span>Avg Active:</span> <span className="font-mono text-amber-400">{clusterStats[2].active.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between"><span>Avg Metal:</span> <span className="font-mono text-amber-400">{clusterStats[2].heavy.toFixed(1)} ppm</span></p>
-                                        <p className="flex justify-between"><span>Avg Water Ext:</span> <span className="font-mono text-amber-400">{clusterStats[2].waterExtract.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between"><span>Avg Alcohol Ext:</span> <span className="font-mono text-amber-400">{clusterStats[2].alcoholExtract.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
-                                            <span>WHO Compliant:</span>
-                                            {isCompliant(clusterStats[2]) ? (
-                                                <span className="flex items-center gap-1 text-green-400 font-medium"><CheckCircle className="w-3.5 h-3.5" /> Yes</span>
-                                            ) : (
-                                                <span className="flex items-center gap-1 text-red-400 font-medium"><XCircle className="w-3.5 h-3.5" /> No</span>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Cluster 3 Card */}
-                                <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 border-t-4 border-t-red-500 shadow-md relative overflow-hidden">
-                                    <AlertTriangle className="absolute -bottom-4 -right-4 w-24 h-24 text-red-500/10" />
-                                    <h3 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Cluster 3</h3>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                        <span className="text-lg font-bold text-slate-100">Contaminated</span>
-                                    </div>
-                                    <div className="space-y-1 text-sm text-slate-300">
-                                        <p className="flex justify-between"><span>Avg Active:</span> <span className="font-mono text-red-400">{clusterStats[3].active.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between"><span>Avg Metal:</span> <span className="font-mono text-red-400">{clusterStats[3].heavy.toFixed(1)} ppm</span></p>
-                                        <p className="flex justify-between"><span>Avg Water Ext:</span> <span className="font-mono text-red-400">{clusterStats[3].waterExtract.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between"><span>Avg Alcohol Ext:</span> <span className="font-mono text-red-400">{clusterStats[3].alcoholExtract.toFixed(1)}%</span></p>
-                                        <p className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
-                                            <span>WHO Compliant:</span>
-                                            {isCompliant(clusterStats[3]) ? (
-                                                <span className="flex items-center gap-1 text-green-400 font-medium"><CheckCircle className="w-3.5 h-3.5" /> Yes</span>
-                                            ) : (
-                                                <span className="flex items-center gap-1 text-red-400 font-medium"><XCircle className="w-3.5 h-3.5" /> No</span>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
+                                <ClusterSummaryCard clusterId={1} label="High Purity" color="green" topColor="border-t-green-500" stats={clusterStats[1]} isCompliantStatus={isCompliant(clusterStats[1])} />
+                                <ClusterSummaryCard clusterId={2} label="Moderate Risk" color="amber" topColor="border-t-amber-500" stats={clusterStats[2]} isCompliantStatus={isCompliant(clusterStats[2])} />
+                                <ClusterSummaryCard clusterId={3} label="Contaminated" color="red" topColor="border-t-red-500" stats={clusterStats[3]} isCompliantStatus={isCompliant(clusterStats[3])} />
                             </div>
                         </>
                     )}
