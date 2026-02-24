@@ -1,8 +1,19 @@
-/* SMOOTH SCROLLING BASE */
-html {
+html,
+body {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll on the entire page */
+  width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  word-break: break-word;
+  /* Prevent long words in headings from breaking layout on small screens */
 }
 
 @keyframes shimmer {

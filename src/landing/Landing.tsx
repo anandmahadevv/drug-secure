@@ -3,6 +3,10 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import logo from '../assets/logo.png'; // Removed to fix 'logo is declared but never read' error
 import anand from '../assets/anand.png';
+import dinesh from '../assets/DINESH.jpeg';
+import sumedha from '../assets/sumedha.jpeg';
+import dhanush from '../assets/dhanush.jpeg';
+import renin from '../assets/renin.jpeg';
 import './Landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -76,10 +80,10 @@ const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
 
 const teamMembers = [
   { role: "Project Lead", desc: "Operations", image: anand },
-  { role: "AI Engineer", desc: "ML Lead", image: "" }, // Add photos here
-  { role: "Systems Arch", desc: "Arch", image: "" },
-  { role: "Pharma Advisor", desc: "QC Spec", image: "" },
-  { role: "Analyst", desc: "Market", image: "" }
+  { role: "AI Engineer", desc: "ML Lead", image: dhanush },
+  { role: "Systems Arch", desc: "Arch", image: dinesh },
+  { role: "Pharma Advisor", desc: "QC Spec", image: sumedha },
+  { role: "Analyst", desc: "Market", image: renin }
 ];
 
 const Landing: React.FC = () => {
@@ -476,7 +480,7 @@ const Landing: React.FC = () => {
         {/* 11. TEAM SECTION */}
         <section id="team" className=" py-32 bg-white relative">
           <div className="container mx-auto px-6 md:px-12 lg:px-20 text-center">
-            <h2 className=" text-[15px] font-bold uppercase tracking-[0.7em] text-ayurveda mb-20 italic font-serif">Technical Committee</h2>
+            <h2 className=" text-[15px] font-bold uppercase tracking-[0.7em] text-ayurveda mb-20 italic font-serif">Drug Dealers</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 md:gap-16 max-w-6xl mx-auto">
               {teamMembers.map((member, i) => (
                 <div key={i} className={` space-y-6 group`}>
