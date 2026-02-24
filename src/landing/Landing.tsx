@@ -154,7 +154,7 @@ const Landing: React.FC = () => {
               </a>
             ))}
             <button className={`ml-8 btn-premium px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${isScrolled ? 'bg-white text-ayurveda-green border-none' : 'border-2 border-ayurveda-green text-ayurveda-green hover:bg-ayurveda-green hover:text-white'}`}>
-              Contact
+              Dashboard
             </button>
           </div>
 
@@ -180,10 +180,10 @@ const Landing: React.FC = () => {
             <div className="inline-block px-4 py-1 rounded-full bg-ayurveda-accent/10 text-ayurveda-accent text-sm font-semibold mb-6 tracking-wider uppercase border border-ayurveda-accent/20 animate-pulse">
               AI-Powered Standardization
             </div>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight max-w-5xl mx-auto italic font-serif">
+            <h1 className="text-3xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight max-w-5xl mx-auto italic font-serif">
               Standardization System for <span className="text-ayurveda-accent">Ayurvedic Drug</span> Quality Control
             </h1>
-            <p className="text-lg md:text-xl lg:text-2xl mb-4 font-light text-ayurveda-green/80 max-w-3xl mx-auto">
+            <p className="text-base md:text-xl lg:text-2xl mb-4 font-light text-ayurveda-green/80 max-w-3xl mx-auto">
               Bridging 5,000 years of traditional wisdom with the precision of modern data science.
             </p>
             <p className="text-base md:text-lg lg:text-xl mb-10 font-medium text-ayurveda-green/70 max-w-2xl mx-auto leading-relaxed">
@@ -278,14 +278,14 @@ const Landing: React.FC = () => {
                     ))}
                   </ul>
                 </div>
-                <div className="space-y-6 bg-white/40 backdrop-blur-sm p-6 rounded-2xl border border-ayurveda-beige/20 shadow-sm sm:col-span-2 md:col-span-1 transition-all duration-500 hover:backdrop-blur-xl hover:shadow-2xl hover:-translate-y-2 group">
+                <div className="space-y-6 bg-white/40 backdrop-blur-sm p-6 rounded-2xl border border-ayurveda-beige/20 shadow-sm transition-all duration-500 hover:backdrop-blur-xl hover:shadow-2xl hover:-translate-y-2 group">
                   <h3 className="text-lg md:text-xl font-bold flex items-center gap-3 border-b border-ayurveda-beige pb-4 tracking-tighter font-serif">
                     <span className="w-6 h-6 flex items-center justify-center bg-ayurveda-accent text-white text-xs rounded shrink-0 group-hover:scale-110 transition-transform duration-500">3</span>
                     OUTPUT METRICS
                   </h3>
                   <ul className="space-y-3 font-sans text-[10px] md:text-xs text-ayurveda-green/70">
                     {['Cluster Membership', 'Centroid Deviation', 'Quality Conf. Score', 'Export QC Cert'].map((li, i) => (
-                      <li key={i} className="flex gap-2"><span className="opacity-50 tracking-tighter shrink-0">{`>`}</span> <span>{li}</span></li>
+                      <li key={i} className="flex gap-2"><span className="opacity-50 tracking-tighter shrink-0">{`>`}</span> <span className="truncate">{li}</span></li>
                     ))}
                   </ul>
                 </div>
@@ -304,10 +304,10 @@ const Landing: React.FC = () => {
 
             <div
               ref={tableRef}
-              className="max-w-6xl mx-auto overflow-hidden rounded-[2rem] md:rounded-[3.5rem] border border-ayurveda-beige/40 shadow-2xl bg-white relative will-change-transform"
+              className="max-w-6xl mx-auto overflow-hidden rounded-[1.5rem] md:rounded-[3.5rem] border border-ayurveda-beige/40 shadow-2xl bg-white relative will-change-transform"
             >
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[700px]">
+              <div className="overflow-x-auto scrollbar-hide">
+                <table className="w-full text-left border-collapse min-w-[600px] md:min-w-[700px]">
                   <thead>
                     <tr className="bg-ayurveda-green text-white">
                       <th className="p-6 md:p-10 font-bold uppercase tracking-widest text-xs italic font-serif">Strategic Indicator</th>
@@ -439,17 +439,17 @@ const Landing: React.FC = () => {
         </section>
 
         {/* 9. MARKET OPPORTUNITY */}
-        <section id="market" className="py-24 bg-white relative overflow-hidden">
+        <section id="market" className="py-20 md:py-24 bg-white relative overflow-hidden">
           <div className="container mx-auto px-6 md:px-12 lg:px-20 text-left">
-            <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
               <div>
-                <h2 className=" text-3xl md:text-4xl font-bold mb-10 italic font-serif">Global Opportunity</h2>
+                <h2 className=" text-3xl md:text-4xl font-bold mb-6 md:mb-10 italic font-serif">Global Opportunity</h2>
                 <p className="text-base md:text-lg text-ayurveda-green/80 font-light leading-relaxed">
                   The Indian Ayurveda industry is projected to reach <span className="font-bold text-ayurveda-green">$16 Billion</span> by 2026. Standardization is the singular barrier to dominance.
                 </p>
               </div>
-              <div className="p-10 bg-ayurveda-light rounded-[3rem] border border-ayurveda-beige/40 text-center shadow-xl">
-                <h4 className="text-xl md:text-2xl font-bold mb-8 italic text-ayurveda-green font-serif">"Standardization is the bridge between wisdom and pharmaceutical dominance."</h4>
+              <div className="p-8 md:p-10 bg-ayurveda-light rounded-[2rem] md:rounded-[3rem] border border-ayurveda-beige/40 text-center shadow-xl">
+                <h4 className="text-lg md:text-xl md:text-2xl font-bold mb-6 md:mb-8 italic text-ayurveda-green font-serif">"Standardization is the bridge between wisdom and pharmaceutical dominance."</h4>
                 <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-ayurveda-green/40">Market Analysis 2026</p>
               </div>
             </div>
@@ -457,10 +457,10 @@ const Landing: React.FC = () => {
         </section>
 
         {/* 10. ROADMAP */}
-        <section id="roadmap" className=" py-32 bg-[linear-gradient(135deg,_#0d1f17_0%,_#1a3a2a_40%,_#0d2433_100%)] text-[#a8c5a0] relative overflow-hidden">
+        <section id="roadmap" className=" py-20 md:py-32 bg-[linear-gradient(135deg,_#0d1f17_0%,_#1a3a2a_40%,_#0d2433_100%)] text-[#a8c5a0] relative overflow-hidden">
           <div className="container mx-auto px-6 md:px-12 lg:px-20 text-left">
-            <h2 className=" text-3xl md:text-4xl font-bold mb-24 text-center italic tracking-tight font-serif">Roadmap 2026</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 overflow-visible">
+            <h2 className=" text-3xl md:text-4xl font-bold mb-16 md:mb-24 text-center italic tracking-tight font-serif">Roadmap 2026</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 overflow-visible">
               {[
                 { phase: "01", title: "Dataset Engineering", desc: "Refining K-Means hyperparameters using synthetic chemical profiles." },
                 { phase: "02", title: "Sensor Validation", desc: "Laboratory-grade E-Tongue integration and deep-linking signatures." },
@@ -478,10 +478,10 @@ const Landing: React.FC = () => {
         </section>
 
         {/* 11. TEAM SECTION */}
-        <section id="team" className=" py-32 bg-white relative">
-          <div className="container mx-auto px-6 md:px-12 lg:px-20 text-center">
-            <h2 className=" text-[15px] font-bold uppercase tracking-[0.7em] text-ayurveda mb-20 italic font-serif">Drug Dealers</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 md:gap-16 max-w-6xl mx-auto">
+        <section id="team" className=" py-20 md:py-32 bg-white relative">
+          <div className="container mx-auto px-4 md:px-12 lg:px-20 text-center">
+            <h2 className=" text-[13px] md:text-[15px] font-bold uppercase tracking-[0.5em] md:tracking-[0.7em] text-ayurveda mb-12 md:mb-20 italic font-serif">Drug Secure Squad</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-16 max-w-6xl mx-auto">
               {teamMembers.map((member, i) => (
                 <div key={i} className={` space-y-6 group`}>
                   <div className="w-full aspect-square bg-ayurveda-light rounded-[2rem] flex items-center justify-center border border-ayurveda-beige/20 shadow-inner hover:shadow-2xl transition-all duration-700 overflow-hidden bg-white">
