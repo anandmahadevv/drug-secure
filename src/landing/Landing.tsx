@@ -9,6 +9,7 @@ import dhanush from '../assets/dhanush.jpeg';
 import renin from '../assets/renin.jpeg';
 import './Landing.css';
 
+
 gsap.registerPlugin(ScrollTrigger);
 
 const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
@@ -64,11 +65,11 @@ const comparisonData = [
 ];
 
 const teamMembers = [
-  { role: "Project Lead", desc: "Operations", image: anand },
-  { role: "AI Engineer", desc: "ML Lead", image: dhanush },
-  { role: "Systems Arch", desc: "Arch", image: dinesh },
-  { role: "Pharma Advisor", desc: "QC Spec", image: sumedha },
-  { role: "Analyst", desc: "Market", image: renin }
+  { role: "Project Lead", desc: "Operations", image: anand ,id:"https://www.linkedin.com/in/anand-mahadev/"},
+  { role: "AI Engineer", desc: "ML Lead", image: dhanush ,id:"https://www.linkedin.com/in/dhanush-shenoy-h/"},
+  { role: "Systems Arch", desc: "Arch", image: dinesh ,id:"https://www.linkedin.com/in/dinesh-a-122983374/"},
+  { role: "Pharma Advisor", desc: "QC Spec", image: sumedha ,id:"https://github.com/dineshyr29-04/"},
+  { role: "Analyst", desc: "Market", image: renin ,id:"https://github.com/dineshyr29-04/"}
 ];
 
 interface LandingProps {
@@ -544,7 +545,8 @@ const Landing: React.FC<LandingProps> = ({ onNavigateToDashboard }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-16 max-w-6xl mx-auto">
               {teamMembers.map((member, i) => (
                 <div key={i} className={` space-y-6 group`}>
-                  <div className="w-full aspect-square bg-ayurveda-light rounded-[2rem] flex items-center justify-center border border-ayurveda-beige/20 shadow-inner hover:shadow-2xl transition-all duration-700 overflow-hidden bg-white">
+                  
+                  <a href={member.id} target="_blank" rel="noopener noreferrer" className="w-full aspect-square bg-ayurveda-light rounded-[2rem] flex items-center justify-center border border-ayurveda-beige/20 shadow-inner hover:shadow-2xl transition-all duration-700 overflow-hidden bg-white">
                     {member.image ? (
                       <img
                         src={member.image}
@@ -556,7 +558,7 @@ const Landing: React.FC<LandingProps> = ({ onNavigateToDashboard }) => {
                         <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
                       </svg>
                     )}
-                  </div>
+                  </a>
                   <h4 className="font-bold text-lg italic tracking-tighter font-serif">{member.role}</h4>
                   <p className="text-[9px] uppercase font-bold tracking-[0.3em] opacity-40 italic text-ayurveda-green/90">{member.desc}</p>
                 </div>
@@ -589,21 +591,17 @@ const Landing: React.FC<LandingProps> = ({ onNavigateToDashboard }) => {
         </section>
 
         {/* 13. FOOTER */}
-        <footer className="py-24 bg-[radial-gradient(ellipse_at_top,_#1a3a2a_0%,_#0a1628_60%,_#050d14_100%)] text-white text-center border-t border-white/5 relative overflow-hidden flex flex-col items-center">
+        <footer className="py-24 bg-[radial-gradient(ellipse_at_top,_#1a3a2a_0%,_#0a1628_60%,_#050d14_100%)] text-[#54b3d6] text-center border-t border-white/5 relative overflow-hidden flex flex-col items-center">
           <div className="container mx-auto px-6 md:px-12 lg:px-20 relative z-10">
             <div className="mb-10 flex flex-col items-center group">
-              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6 opacity-30 group-hover:opacity-100 transition-all duration-300">
-                {/*<Logo className="w-12 h-12" />*/}
-                <img src="/logo.png" alt="logo" className="w-12 h-12" />
-              </div>
-              <div className="opacity-30 tracking-[0.8em] italic font-bold text-[10px] uppercase">
+              <div className="opacity-20 tracking-[0.8em] italic font-bold text-[15px] uppercase">
                 DRUG SECURE QUALITY SYSTEMS / 2026
               </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-center gap-10 md:gap-20 text-[10px] uppercase tracking-[0.3em] font-bold opacity-60 italic">
-              <a href="#" className="hover:text-ayurveda-accent transition-colors underline decoration-white/10 underline-offset-[12px] hover:decoration-ayurveda-accent">Hackathon</a>
-              <a href="mailto:contact@drugsecure.ai" className="hover:text-ayurveda-accent transition-colors underline decoration-white/10 underline-offset-[12px] hover:decoration-ayurveda-accent">Liaison</a>
-              <a href="#" className="hover:text-ayurveda-accent transition-colors underline decoration-white/10 underline-offset-[12px] hover:decoration-ayurveda-accent">GitHub</a>
+              <a href="#" className="hover:text-[#00FF00] transition-colors underline decoration-white/10 underline-offset-[12px] hover:decoration-ayurveda-accent">Hackathon</a>
+              <a href="mailto:[EMAIL_ADDRESS]" className="hover:text-[#00FF00] transition-colors underline decoration-white/10 underline-offset-[12px] hover:decoration-ayurveda-accent">Liaison</a>
+              <a href="#" className="hover:text-[#00FF00] transition-colors underline decoration-white/10 underline-offset-[12px] hover:decoration-ayurveda-accent">GitHub</a>
             </div>
           </div>
         </footer>
