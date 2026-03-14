@@ -16,3 +16,6 @@
 ## Update (2026-03-28T09:46:38)
 - perf: lazy load images for faster rendering
 
+## Update (2026-03-14T09:46:39)
+- fix: resolve edge case in user authentication
+
