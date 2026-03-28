@@ -13,3 +13,6 @@
 ## Update (2026-04-11T09:46:38)
 - refactor: optimize data processing pipeline
 
+## Update (2026-03-28T09:46:38)
+- perf: lazy load images for faster rendering
+
