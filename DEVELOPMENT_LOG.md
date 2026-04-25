@@ -7,3 +7,6 @@
 ## Update (2026-05-09T09:46:37)
 - feat: add support for pagination in API
 
+## Update (2026-04-25T09:46:38)
+- docs: clarify setup instructions in README
+
