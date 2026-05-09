@@ -4,3 +4,6 @@
 ## Update (2026-05-23T09:46:37)
 - chore: update dependencies to latest stable versions
 
+## Update (2026-05-09T09:46:37)
+- feat: add support for pagination in API
+
